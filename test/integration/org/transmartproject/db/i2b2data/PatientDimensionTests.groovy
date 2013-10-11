@@ -27,7 +27,7 @@ class PatientDimensionTests {
         assertThat patient, allOf(
                 is(notNullValue(Patient)),
                 hasProperty('id', equalTo(-2001L)),
-                hasProperty('trial', equalTo('REGION_SAMP_TRIAL')),
+                hasProperty('trial', equalTo('TEST_STUDY')),
                 hasProperty('inTrialId', equalTo('SUBJ_ID_1')),
         )
     }
@@ -42,6 +42,14 @@ class PatientDimensionTests {
         assertThat patient, allOf(
                 is(notNullValue(Patient)),
                 hasProperty('assays', containsInAnyOrder(
+                        allOf(
+                                hasProperty('id', equalTo(-3004L)),
+                                hasProperty('subjectId', equalTo('VCF_SUBJ_ID_2')),
+                        ),
+                        allOf(
+                                hasProperty('id', equalTo(-3003L)),
+                                hasProperty('subjectId', equalTo('VCF_SUBJ_ID_1')),
+                        ),
                         allOf(
                                 hasProperty('id', equalTo(-3002L)),
                                 hasProperty('subjectId', equalTo('SUBJ_ID_2')),

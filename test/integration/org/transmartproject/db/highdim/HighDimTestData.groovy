@@ -54,11 +54,11 @@ class HighDimTestData {
         [
                 [
                         id: -2001,
-                        sourcesystemCd: 'REGION_SAMP_TRIAL:SUBJ_ID_1'
+                        sourcesystemCd: 'TEST_STUDY:SUBJ_ID_1'
                 ],
                 [
                         id: -2002,
-                        sourcesystemCd: 'REGION_SAMP_TRIAL:SUBJ_ID_2'
+                        sourcesystemCd: 'TEST_STUDY:SUBJ_ID_2'
                 ],
         ].collect {
             def p = new PatientDimension(it)
@@ -70,8 +70,7 @@ class HighDimTestData {
         def patients = testRegionPatients
         def common = [
                 siteId: 'site id #1',
-                conceptCode: 'concept code #1',
-                trialName: 'REGION_SAMP_TRIAL',
+                trialName: 'TEST_STUDY',
                 timepointName: 'timepoint name #1',
                 timepointCd: 'timepoint code',
                 sampleTypeName: 'sample name #1',
@@ -84,16 +83,33 @@ class HighDimTestData {
                 new DeSubjectSampleMapping([
                         patient: patients[0],
                         subjectId: 'SUBJ_ID_1',
+                        conceptCode: 'A',
                         *:common
                 ]),
                 new DeSubjectSampleMapping([
                         patient: patients[1],
                         subjectId: 'SUBJ_ID_2',
+                        conceptCode: 'A',
+                        *:common
+                ]),
+                //Vcf
+                new DeSubjectSampleMapping([
+                        patient: patients[0],
+                        subjectId: 'VCF_SUBJ_ID_1',
+                        conceptCode: 'V',
+                        *:common
+                ]),
+                new DeSubjectSampleMapping([
+                        patient: patients[1],
+                        subjectId: 'VCF_SUBJ_ID_2',
+                        conceptCode: 'V',
                         *:common
                 ])
         ]
         r[0].id = -3001;
         r[1].id = -3002;
+        r[2].id = -3003;
+        r[3].id = -3004;
         r
     }()
 
@@ -121,6 +137,53 @@ class HighDimTestData {
                 createACGHData(testRegions[1], testRegionAssays[0], 1),
                 createACGHData(testRegions[1], testRegionAssays[1], 2),
         ]
+    }()
+
+    static DeVariantSubjectSummary createVcfSubjectSummaries(Assay assay, LinkedHashMap specificValues) {
+        new DeVariantSubjectSummary([
+                assay: assay,
+                chromosome: '17',
+                position: 19276199,
+                rsId: 'rs2048230',
+                allele1: 0,
+                allele2: 1,
+                reference: true,
+                //TODO Delete this field
+                subjectId: "NOT-NEEDED-${System.currentTimeMillis()}",
+                *: specificValues])
+    }
+
+    static DeVariantSubjectDetail createVcfSubjectDetail(LinkedHashMap specificValues) {
+        new DeVariantSubjectDetail([
+                chromosome: '17',
+                position: 19276199,
+                rsId: 'rs2048230',
+                ref: 'A',
+                alt: 'G,C',
+                alt: 'G,C',
+                info: 'AC=2,4;AF=0.0047,0.0094;AN=426;DB;DP=2241;Dels=0.00;HRun=0;MQ0=0;set=Intersection',
+                *: specificValues])
+    }
+
+    static DeVariantDataset testVariantDataset = {
+        def dataset = new DeVariantDataset(genome: 'hg19')
+        dataset.id = 'TEST-STUDY'
+        def testSubjectSummaries = [
+                createVcfSubjectSummaries(testRegionAssays[2], [allele1: 0, allele2: 1, position: 19276405, chromosome: '.']),
+                createVcfSubjectSummaries(testRegionAssays[2], [allele1: 2, allele2: 1]),
+                createVcfSubjectSummaries(testRegionAssays[3], [allele1: 2, allele2: 1, position: 19276405, chromosome: '.']),
+                createVcfSubjectSummaries(testRegionAssays[3], [allele1: 2, allele2: 0]),
+        ]
+        dataset.summaries = testSubjectSummaries
+
+        def testSubjectDetails = [
+                createVcfSubjectDetail([position: 19276405, chromosome: '.']),
+                createVcfSubjectDetail([:]),
+                createVcfSubjectDetail([position: 19276405, chromosome: '.']),
+                createVcfSubjectDetail([:]),
+        ]
+        dataset.details = testSubjectDetails
+        dataset
     }()
 
 }

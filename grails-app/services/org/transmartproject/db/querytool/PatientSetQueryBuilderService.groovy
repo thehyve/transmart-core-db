@@ -159,7 +159,7 @@ class PatientSetQueryBuilderService {
      *
      * @return raw SQL of the query that this type represents
      */
-    private String getQuerySql(AbstractQuerySpecifyingType term) {
+    String getQuerySql(AbstractQuerySpecifyingType term) {
         def res = "SELECT $term.factTableColumn " +
                 "FROM $term.dimensionTableName " +
                 "WHERE $term.columnName $term.operator $term.processedDimensionCode"

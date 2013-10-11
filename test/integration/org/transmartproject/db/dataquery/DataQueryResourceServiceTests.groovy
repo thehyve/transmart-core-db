@@ -12,15 +12,20 @@ import org.transmartproject.core.dataquery.acgh.Region
 import org.transmartproject.core.dataquery.acgh.RegionRow
 import org.transmartproject.core.dataquery.assay.Assay
 import org.transmartproject.core.dataquery.constraints.ACGHRegionQuery
+import org.transmartproject.core.dataquery.constraints.HighDimensionalQuery
 import org.transmartproject.core.dataquery.constraints.CommonHighDimensionalQueryConstraints
 import org.transmartproject.db.highdim.DeChromosomalRegion
 import org.transmartproject.db.highdim.DeGplInfo
 import org.transmartproject.db.highdim.DeSubjectSampleMapping
+import org.transmartproject.db.highdim.DeVariantSubjectSummary
+import org.transmartproject.db.i2b2data.ConceptDimension
 import org.transmartproject.db.querytool.QtQueryResultInstance
 
 import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.fail
 import static org.transmartproject.test.Matchers.hasSameInterfaceProperties
 
@@ -29,15 +34,43 @@ abstract class DataQueryResourceServiceTests {
     def sessionFactory
     def resultInstance
     def testedService
+    def conceptsResourceService
 
     @Before
     void setUp() {
+        /* 1. Define concepts */
+        def concepts = [ /* level, concept_path, concept_cd */
+                [0, "\\t\\", 'T'],
+                [1, "\\t\\acgh\\", 'A'],
+                [1, "\\t\\vcf\\", 'V'],
+        ]
+        addTableAccess(level: 0, fullName: '\\a\\', name: 'foo',
+                tableCode: 'i2b2tc', tableName: 'i2b2')
+        concepts.each {
+            addI2b2(level              : it[0],
+                    fullName           : it[1],
+                    name               : it[2],
+                    factTableColumn    : 'concept_cd',
+                    dimensionTableName : 'concept_dimension',
+                    columnName         : 'concept_path',
+                    columnDataType     : 'T',
+                    operator           : 'LIKE',
+                    dimensionCode      : it[1])
+
+            def cd = new ConceptDimension(
+                    conceptCd:   it[2],
+                    conceptPath: it[1]
+            ).save()
+            assertNotNull cd
+        }
+
         def queryMaster
         assertThat testRegionPlatform.save(), isA(Platform)
         assertThat testRegions*.save(), everyItem(isA(Region))
         assertThat testRegionPatients*.save(), everyItem(isA(Patient))
         assertThat testRegionAssays*.save(), everyItem(isA(Assay))
         assertThat testACGHData*.save(), everyItem(isA(ACGHValues))
+        assertNotNull testVariantDataset.save()
         queryMaster = createQueryResult(testRegionPatients).save()
         assertThat queryMaster, is(notNullValue())
 
@@ -56,6 +89,7 @@ abstract class DataQueryResourceServiceTests {
                         studies: [testRegionAssays[0].trialName],
                         patientQueryResult: resultInstance
                 ),
+                term: conceptsResourceService.getByKey('\\\\i2b2tc\\t\\acgh\\')
         )
         def result = testedService.runACGHRegionQuery(q, null)
 
@@ -131,7 +165,8 @@ abstract class DataQueryResourceServiceTests {
                         //In this case tested region wider then the segment and it get into results
                         new ChromosomalSegment(chromosome: '1', start: 44, end: 8888),
                         //In this case just end of tested region belong to segment and it get into results
-                        new ChromosomalSegment(chromosome: '2', start: 88, end: 99) ]
+                        new ChromosomalSegment(chromosome: '2', start: 88, end: 99) ],
+                term: conceptsResourceService.getByKey('\\\\i2b2tc\\t\\acgh\\')
         )
 
         def anotherPlatform = new DeGplInfo(
@@ -187,7 +222,7 @@ abstract class DataQueryResourceServiceTests {
         def base = [
                 patient: testRegionPatients[0],
                 subjectId: testRegionPatients[0].inTrialId,
-                trialName: 'REGION_SAMP_TRIAL',
+                trialName: 'TEST_STUDY',
                 timepointCd: 'match timepointcd',
                 sampleTypeCd: 'match sampletypecd',
                 tissueTypeCd: 'match tissuetypecd',
@@ -273,6 +308,7 @@ abstract class DataQueryResourceServiceTests {
                         patientQueryResult: session.get(
                                 QtQueryResultInstance, resultInstance.id)
                 ),
+                term: conceptsResourceService.getByKey('\\\\i2b2tc\\t\\acgh\\')
         )
         def result = testedService.runACGHRegionQuery(q, session)
 
@@ -287,6 +323,7 @@ abstract class DataQueryResourceServiceTests {
                 common: new CommonHighDimensionalQueryConstraints(
                         studies: [testRegionAssays[0].trialName],
                 ),
+                term: conceptsResourceService.getByKey('\\\\i2b2tc\\t\\acgh\\')
         )
 
         try {
@@ -300,5 +337,31 @@ abstract class DataQueryResourceServiceTests {
                                     'specified/empty'))
             ))
         }
+    }
+
+    @Test
+    void testGetCohortMaf_basic() {
+        def q = new HighDimensionalQuery (
+                common: new CommonHighDimensionalQueryConstraints(
+                        studies: [testRegionAssays[0].trialName],
+                        patientQueryResult: resultInstance
+                ),
+                term: conceptsResourceService.getByKey('\\\\i2b2tc\\t\\vcf\\')
+        )
+        def result = testedService.getCohortMaf(q)
+        assertNotNull result
+    }
+
+    @Test
+    void testGetSummaryMaf_basic() {
+        def q = new HighDimensionalQuery (
+                common: new CommonHighDimensionalQueryConstraints(
+                        studies: [testRegionAssays[0].trialName],
+                        patientQueryResult: resultInstance
+                ),
+                term: conceptsResourceService.getByKey('\\\\i2b2tc\\t\\vcf\\')
+        )
+        def result = testedService.getSummaryMaf(q)
+        assertNotNull result
     }
 }

@@ -9,12 +9,19 @@ import org.transmartproject.core.dataquery.acgh.ChromosomalSegment
 import org.transmartproject.core.dataquery.acgh.RegionResult
 import org.transmartproject.core.dataquery.assay.Assay
 import org.transmartproject.core.dataquery.constraints.ACGHRegionQuery
+import org.transmartproject.core.dataquery.constraints.HighDimensionalQuery
+import org.transmartproject.core.dataquery.vcf.VcfValues
+import org.transmartproject.core.dataquery.vcf.VcfValuesImpl
+import org.transmartproject.db.highdim.DeVariantSubjectDetail
+import org.transmartproject.db.highdim.DeVariantSubjectSummary
+import org.transmartproject.db.querytool.QtQueryResultInstance
 
 import static org.hibernate.ScrollMode.FORWARD_ONLY
 
 class DataQueryResourceService implements DataQueryResource {
 
     def sessionFactory
+    def patientSetQueryBuilderService
 
     @Override
     RegionResult runACGHRegionQuery(ACGHRegionQuery spec, session) {
@@ -28,7 +35,7 @@ class DataQueryResourceService implements DataQueryResource {
         validateQuery(spec)
 
         session = session ?: sessionFactory.currentSession
-        List<Assay> assays = getAssaysForACGHRegionQuery(spec, session)
+        List<Assay> assays = queryAssays(spec, session)
         if (log.isDebugEnabled()) {
             log.debug("Found ${assays.size()} assays: " +
                     assays.collect {
@@ -42,7 +49,7 @@ class DataQueryResourceService implements DataQueryResource {
     @Override
     List<ChromosomalSegment> getChromosomalSegments(ACGHRegionQuery spec) {
         def session = sessionFactory.currentSession
-        List<Assay> assays = getAssaysForACGHRegionQuery(spec, session)
+        List<Assay> assays = queryAssays(spec, session)
         def platformIds = assays.collect { it.platform.id } as Set
         def rows = createQuery(session, '''
             select region.chromosome, min(region.start), max(region.end) from DeChromosomalRegion region
@@ -54,13 +61,13 @@ class DataQueryResourceService implements DataQueryResource {
         }
     }
 
-    protected List<Assay> getAssaysForACGHRegionQuery(ACGHRegionQuery spec, AbstractSessionImpl session) {
+    protected List<Assay> queryAssays(HighDimensionalQuery spec, AbstractSessionImpl session) {
         def whereClauses, params
 
         /* first obtain list of assays */
         whereClauses = []
         params = [:]
-        populateWhereClauses(spec, whereClauses, params)
+        populateWhereClauses(spec, whereClauses, params, session)
 
         def assayHQL = 'from DeSubjectSampleMapping assay\n'
         assayHQL <<= 'where ' + whereClauses.join("\nand ") + "\n"
@@ -155,9 +162,10 @@ class DataQueryResourceService implements DataQueryResource {
         assayQuery
     }
 
-    private void populateWhereClauses(ACGHRegionQuery q,
+    private void populateWhereClauses(HighDimensionalQuery q,
                                       List whereClauses,
-                                      Map params) {
+                                      Map params,
+                                      AbstractSessionImpl session) {
 
         /* assays correspond to patients in the result set */
         /* do not use assay.patient in ( select pset.patient ... ); hibernate
@@ -169,6 +177,15 @@ class DataQueryResourceService implements DataQueryResource {
                     where pset.resultInstance = :queryResult
                 )'''
         params['queryResult'] = q.common.patientQueryResult
+
+        if(q.term) {
+            def termSql = patientSetQueryBuilderService.getQuerySql(q.term)
+            List concepts = session.createSQLQuery(termSql).list()
+            assert concepts, "No concept found for term (${q.term})"
+            assert concepts.size() == 1, "There are several concepts ($concepts) for term (${q.term})."
+            whereClauses << 'assay.conceptCode = :conceptCode'
+            params['conceptCode'] = concepts[0]
+        }
 
         /* We treat empty lists the same as nulls here!
          * This means specifying an empty list for platforms will not return an
@@ -200,6 +217,101 @@ class DataQueryResourceService implements DataQueryResource {
             whereClauses << 'assay.timepointCd in (:timepointCodes)'
             params['timepointCodes'] = q.common.timepointCodes
         }
+    }
+
+    @Override
+    List<VcfValues> getCohortMaf(HighDimensionalQuery spec) {
+        List<Assay> assays = queryAssays(spec, sessionFactory.currentSession)
+        def summaries = DeVariantSubjectSummary.createCriteria().list {
+            or {
+                spec.segments.each {
+                    eq('chromosome', it.chromosome)
+                    between('position', it.start, it.end)
+                }
+            }
+            inList('assay', assays)
+            and {
+                order('chromosome')
+                order('position')
+            }
+        }
+        if(!summaries) return []
+
+        def collector = [:]
+        def chrPos = null
+        List<VcfValues> results = []
+        summaries.each {
+            if (chrPos && (chrPos.chromosome != it.chromosome || chrPos.position != it.position)) {
+                def vcfValue = calculateVcfValues(chrPos, collector[chrPos])
+                if (vcfValue) results << vcfValue
+            }
+            chrPos = [chromosome: it.chromosome, position: it.position, rsId: it.rsId]
+            if(!collector[chrPos]) collector[chrPos] = [:]
+            collector[chrPos][it.allele1] = (collector[chrPos][it.allele1] ?: 0) + 1
+            collector[chrPos][it.allele2] = (collector[chrPos][it.allele2] ?: 0) + 1
+        }
+        def vcfValue = calculateVcfValues(chrPos, collector[chrPos])
+        if (vcfValue) results << vcfValue
+
+        results
+    }
+
+    //private final int REF_ALLELE_INDX = 0
+    private VcfValuesImpl calculateVcfValues(infromationMap, alleleDistributionMap) {
+        double total = alleleDistributionMap.values().sum()
+        def maxAltAlleleEntry = alleleDistributionMap.max { it.key == 0 ? 0 : it.value }
+        if(maxAltAlleleEntry.key == 0) return null
+        new VcfValuesImpl(
+                chromosome: infromationMap.chromosome,
+                position: infromationMap.position,
+                rsId: infromationMap.rsId,
+                mafAllele: "${maxAltAlleleEntry.key}",
+                maf: maxAltAlleleEntry.value / total,
+                //TODO Where to get these fields
+                qualityOfDepth: 0D,
+                ref: 'TODO',
+                alt: 'TOOD',
+                additionalInfo: [:]
+        )
+    }
+
+    @Override
+    List<VcfValues> getSummaryMaf(HighDimensionalQuery spec) {
+        long resultInstanceId = spec.common.patientQueryResult.id
+        List sysCdList = QtQueryResultInstance.executeQuery(
+                '''select p.sourcesystemCd
+                   from QtQueryResultInstance ri
+                   inner join ri.patientSet ps
+                   inner join ps.patient p
+                   where ri.id = :id
+                ''',
+                [id: resultInstanceId],
+                [max: 1])
+
+       assert sysCdList, "No patients found for resultInstanceId = $resultInstanceId"
+       def studyMatcher = sysCdList[0] =~ /^([^:]+):[^:]+$/
+       assert studyMatcher, "Can't retrieve study id from ${sysCdList[0]}"
+
+       def studyId = studyMatcher[0][1]
+
+        log.debug("studyId = $studyId for resultInstanceId = $resultInstanceId")
+
+        def results = DeVariantSubjectDetail.createCriteria().list {
+            or {
+                spec.segments.each {
+                    eq('chromosome', it.chromosome)
+                    between('position', it.start, it.end)
+                }
+            }
+            //TODO Study id should be stored in datasourceId
+            eq('dataset.id', studyId)
+            /*
+            dataset {
+                eq('datasourceId', studyId)
+            }
+            */
+        }
+        results
     }
 }
 

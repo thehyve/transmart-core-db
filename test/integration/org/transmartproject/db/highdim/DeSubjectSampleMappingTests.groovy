@@ -20,9 +20,7 @@ class DeSubjectSampleMappingTests {
 
     @Before
     void setUp() {
-        assertThat testRegionAssays*.save(), contains(
-                isA(Assay), isA(Assay)
-        )
+        assertThat testRegionAssays*.save(), everyItem(isA(Assay))
         sessionFactory.currentSession.flush()
 
         System.out.println('Finished @Before')
@@ -35,8 +33,8 @@ class DeSubjectSampleMappingTests {
         assertThat assay, allOf(
                 is(notNullValue()),
                 hasProperty('siteId', equalTo('site id #1')),
-                hasProperty('conceptCode', equalTo('concept code #1')),
-                hasProperty('trialName', equalTo('REGION_SAMP_TRIAL')),
+                hasProperty('conceptCode', equalTo('A')),
+                hasProperty('trialName', equalTo('TEST_STUDY')),
                 hasProperty('subjectId', equalTo('SUBJ_ID_1'))
         )
     }
