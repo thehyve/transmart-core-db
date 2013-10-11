@@ -47,7 +47,7 @@ class DataQueryResourceService implements DataQueryResource {
     }
 
     @Override
-    List<ChromosomalSegment> getChromosomalSegments(ACGHRegionQuery spec) {
+    List<ChromosomalSegment> getChromosomalSegments(HighDimensionalQuery spec) {
         def session = sessionFactory.currentSession
         List<Assay> assays = queryAssays(spec, session)
         def platformIds = assays.collect { it.platform.id } as Set
