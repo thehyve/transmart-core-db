@@ -225,8 +225,10 @@ class DataQueryResourceService implements DataQueryResource {
         def summaries = DeVariantSubjectSummary.createCriteria().list {
             or {
                 spec.segments.each {
-                    eq('chromosome', it.chromosome)
-                    between('position', it.start, it.end)
+                    and {
+                        eq('chromosome', it.chromosome)
+                        between('position', it.start, it.end)
+                    }
                 }
             }
             inList('assay', assays)
@@ -299,8 +301,10 @@ class DataQueryResourceService implements DataQueryResource {
         def results = DeVariantSubjectDetail.createCriteria().list {
             or {
                 spec.segments.each {
-                    eq('chromosome', it.chromosome)
-                    between('position', it.start, it.end)
+                    and {
+                        eq('chromosome', it.chromosome)
+                        between('position', it.start, it.end)
+                    }
                 }
             }
             //TODO Study id should be stored in datasourceId
