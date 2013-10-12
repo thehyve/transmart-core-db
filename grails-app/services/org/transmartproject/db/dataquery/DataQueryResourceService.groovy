@@ -224,10 +224,10 @@ class DataQueryResourceService implements DataQueryResource {
         List<Assay> assays = queryAssays(spec, sessionFactory.currentSession)
         def summaries = DeVariantSubjectSummary.createCriteria().list {
             or {
-                spec.segments.each {
+                spec.segments.each { segment ->
                     and {
-                        eq('chromosome', it.chromosome)
-                        between('position', it.start, it.end)
+                        eq('chromosome', segment.chromosome)
+                        between('position', segment.start, segment.end)
                     }
                 }
             }
@@ -300,10 +300,10 @@ class DataQueryResourceService implements DataQueryResource {
 
         def results = DeVariantSubjectDetail.createCriteria().list {
             or {
-                spec.segments.each {
+                spec.segments.each { segment ->
                     and {
-                        eq('chromosome', it.chromosome)
-                        between('position', it.start, it.end)
+                        eq('chromosome', segment.chromosome)
+                        between('position', segment.start, segment.end)
                     }
                 }
             }

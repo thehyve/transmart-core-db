@@ -1,5 +1,7 @@
 package org.transmartproject.db.highdim
 
+import org.transmartproject.core.dataquery.vcf.GenomicVariantType
+import static org.transmartproject.core.dataquery.vcf.GenomicVariantType.*
 import org.transmartproject.core.dataquery.vcf.VcfValues
 
 class DeVariantSubjectDetail implements VcfValues {
@@ -88,6 +90,22 @@ class DeVariantSubjectDetail implements VcfValues {
         additionalInfo
     }
 
+    @Override
+    GenomicVariantType getGenomicVariantType() {
+        //TODO Is it possible to has several nucleotides in Ref?
+        def refNucleotides = parseCsvString(ref).toSet()
+        def altNucletides = parseCsvString(alt).toSet()
+        if(refNucleotides.size() == 1 && altNucletides.size() == 1)
+            return SNP
+        if(refNucleotides.size() < altNucletides.size()
+                && (refNucleotides.isEmpty() || altNucletides.containsAll(refNucleotides)))
+            return INS
+        if(refNucleotides.size() > altNucletides.size()
+                && (altNucletides.isEmpty() || refNucleotides.containsAll(altNucletides)))
+            return DEL
+        DIV
+    }
+
     private setAdditionalInfo(Map<String, String> info) { this.info = info }
 
     private Map parseVcfInfo(String info) {
@@ -102,14 +120,18 @@ class DeVariantSubjectDetail implements VcfValues {
     }
 
     private List<Double> parseNumbersList(String numbersString) {
-        if (!numbersString) {
+        parseCsvString(numbersString) {
+            it.isNumber() ? Double.valueOf(it) : null
+        }
+    }
+
+    private List parseCsvString(String string, Closure typeConverterClosure = { it }) {
+        if (!string) {
             return []
         }
 
-        numbersString.split(/\s*,\s*/).collect {
-            it.isNumber() ?
-                Double.valueOf(it)
-            : null
+        string.split(/\s*,\s*/).collect {
+            typeConverterClosure(it)
         }
     }
 }
