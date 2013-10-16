@@ -5,6 +5,7 @@ import static org.transmartproject.core.dataquery.vcf.GenomicVariantType.*
 import org.transmartproject.core.dataquery.vcf.VcfValues
 
 class DeVariantSubjectDetail implements VcfValues {
+
     String chromosome
     Long position
     String rsId
@@ -15,10 +16,12 @@ class DeVariantSubjectDetail implements VcfValues {
     String info
     String format
     String variant
+
     Map<String, String> additionalInfo
+    List<String> alternativeAlleles
 
     static belongsTo = [dataset: DeVariantDataset]
-    static transients = ['additionalInfo']
+    static transients = ['additionalInfo', 'alternativeAlleles']
 
     static constraints = {
         alt(nullable: true)
@@ -83,6 +86,17 @@ class DeVariantSubjectDetail implements VcfValues {
     }
 
     @Override
+    String getReferenceAllele() { ref }
+
+    @Override
+    List<String> getAlternativeAlleles() {
+        if(alternativeAlleles == null) {
+            alternativeAlleles = parseCsvString(alt)
+        }
+        alternativeAlleles
+    }
+
+    @Override
     Map<String, String> getAdditionalInfo() {
         if (additionalInfo == null) {
             additionalInfo = parseVcfInfo(info)
@@ -91,19 +105,38 @@ class DeVariantSubjectDetail implements VcfValues {
     }
 
     @Override
-    GenomicVariantType getGenomicVariantType() {
-        //TODO Is it possible to has several nucleotides in Ref?
-        def refNucleotides = parseCsvString(ref).toSet()
-        def altNucletides = parseCsvString(alt).toSet()
-        if(refNucleotides.size() == 1 && altNucletides.size() == 1)
+    List<GenomicVariantType> getGenomicVariantTypes() {
+        getGenomicVariantTypes(ref, getAlternativeAlleles())
+    }
+
+    List<GenomicVariantType> getGenomicVariantTypes(Collection<String> altCollection) {
+        getGenomicVariantTypes(ref, altCollection)
+    }
+
+    static List<GenomicVariantType> getGenomicVariantTypes(String ref, Collection<String> altCollection) {
+        altCollection.collect{ getGenomicVariantType(ref, it) }
+    }
+
+    static GenomicVariantType getGenomicVariantType(String ref, String alt) {
+        def refCleaned = ref.replaceAll(/[^ACGT]/, '')
+        def altCleaned = alt.replaceAll(/[^ACGT]/, '')
+
+        if(refCleaned.length() == 1 && altCleaned.length() == 1)
             return SNP
-        if(refNucleotides.size() < altNucletides.size()
-                && (refNucleotides.isEmpty() || altNucletides.containsAll(refNucleotides)))
+
+        if(altCleaned.length() > refCleaned.length()
+                && altCleaned.contains(refCleaned))
             return INS
-        if(refNucleotides.size() > altNucletides.size()
-                && (altNucletides.isEmpty() || refNucleotides.containsAll(altNucletides)))
+
+        if(altCleaned.length() < refCleaned.length()
+                && refCleaned.contains(altCleaned))
             return DEL
+
         DIV
+    }
+
+    List<String> getAltAllelesByPositions(Collection<Integer> pos) {
+        pos.collect { getAlternativeAlleles()[it - 1] }
     }
 
     private setAdditionalInfo(Map<String, String> info) { this.info = info }

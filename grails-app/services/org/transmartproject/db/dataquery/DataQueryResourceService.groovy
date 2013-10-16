@@ -11,7 +11,7 @@ import org.transmartproject.core.dataquery.assay.Assay
 import org.transmartproject.core.dataquery.constraints.ACGHRegionQuery
 import org.transmartproject.core.dataquery.constraints.HighDimensionalQuery
 import org.transmartproject.core.dataquery.vcf.VcfValues
-import org.transmartproject.core.dataquery.vcf.VcfValuesImpl
+import org.transmartproject.db.dataquery.vcf.VcfValuesImpl
 import org.transmartproject.db.highdim.DeVariantSubjectDetail
 import org.transmartproject.db.highdim.DeVariantSubjectSummary
 import org.transmartproject.db.querytool.QtQueryResultInstance
@@ -220,9 +220,21 @@ class DataQueryResourceService implements DataQueryResource {
     }
 
     @Override
+    //@CompileStatic
     List<VcfValues> getCohortMaf(HighDimensionalQuery spec) {
         List<Assay> assays = queryAssays(spec, sessionFactory.currentSession)
-        def summaries = DeVariantSubjectSummary.createCriteria().list {
+        if(!assays) return []
+
+        def summaryVcfValues = getSummaryMaf(spec)
+        if(!summaryVcfValues) return []
+
+        def cohortArr = DeVariantSubjectSummary.createCriteria().scroll {
+            projections {
+                property('chromosome')
+                property('position')
+                property('allele1')
+                property('allele2')
+            }
             or {
                 spec.segments.each { segment ->
                     and {
@@ -237,43 +249,75 @@ class DataQueryResourceService implements DataQueryResource {
                 order('position')
             }
         }
-        if(!summaries) return []
 
-        def collector = [:]
-        def chrPos = null
-        List<VcfValues> results = []
-        summaries.each {
-            if (chrPos && (chrPos.chromosome != it.chromosome || chrPos.position != it.position)) {
-                def vcfValue = calculateVcfValues(chrPos, collector[chrPos])
-                if (vcfValue) results << vcfValue
+        def row, results = []
+        try {
+            if(!cohortArr.next()) return []
+            row = cohortArr.get()
+
+            summaryVcfValues.each { summary ->
+                def alleleDistribution = [:]
+                while(row && summary.chromosome == row[0]
+                        && summary.position == row[1]) {
+                    def allele1 = row[2]
+                    def allele2 = row[3]
+                    alleleDistribution[allele1] = (alleleDistribution[allele1] ?: 0) + 1
+                    alleleDistribution[allele2] = (alleleDistribution[allele2] ?: 0) + 1
+
+                    if(!cohortArr.next()) {
+                        VcfValues vcfValue = calculateVcfValues(summary, alleleDistribution)
+                        if(vcfValue)
+                            results << vcfValue
+                        return false
+                    }
+                    row = cohortArr.get()
+                }
+
+                VcfValues vcfValue = calculateVcfValues(summary, alleleDistribution)
+                if(vcfValue)
+                    results << vcfValue
             }
-            chrPos = [chromosome: it.chromosome, position: it.position, rsId: it.rsId]
-            if(!collector[chrPos]) collector[chrPos] = [:]
-            collector[chrPos][it.allele1] = (collector[chrPos][it.allele1] ?: 0) + 1
-            collector[chrPos][it.allele2] = (collector[chrPos][it.allele2] ?: 0) + 1
+        } finally {
+            cohortArr.close()
         }
-        def vcfValue = calculateVcfValues(chrPos, collector[chrPos])
-        if (vcfValue) results << vcfValue
 
         results
     }
 
-    //private final int REF_ALLELE_INDX = 0
-    private VcfValuesImpl calculateVcfValues(infromationMap, alleleDistributionMap) {
-        double total = alleleDistributionMap.values().sum()
-        def maxAltAlleleEntry = alleleDistributionMap.max { it.key == 0 ? 0 : it.value }
-        if(maxAltAlleleEntry.key == 0) return null
+    private VcfValuesImpl calculateVcfValues(VcfValues summary, LinkedHashMap<Integer, Integer> alleleDistribution) {
+        assert summary
+
+        if(!alleleDistribution) return null
+
+        int total = alleleDistribution.values().sum()
+        def altAlleleNums = alleleDistribution.keySet() - [DeVariantSubjectSummary.REF_ALLELE]
+
+        if(!altAlleleNums) return null
+
+        def altAlleleDistribution = alleleDistribution.subMap(altAlleleNums)
+        def altAlleleFrequencies = altAlleleDistribution.collectEntries { [(it.key): it.value / (double) total] }
+        def mafEntry = altAlleleFrequencies.max { it.value }
+
+        def additionalInfo = [:]
+        additionalInfo['AC'] = altAlleleDistribution.values().join(',')
+        additionalInfo['AF'] = altAlleleFrequencies.values().collect{ String.format('%.2f', it) }.join(',')
+        additionalInfo['AN'] = total.toString()
+
+        def altAlleles = summary.getAltAllelesByPositions(altAlleleNums)
+        def mafAllele = altAlleles[altAlleleNums.asList().indexOf(mafEntry.key)]
+        def genomicVariantTypes = summary.getGenomicVariantTypes(altAlleles)
+
         new VcfValuesImpl(
-                chromosome: infromationMap.chromosome,
-                position: infromationMap.position,
-                rsId: infromationMap.rsId,
-                mafAllele: "${maxAltAlleleEntry.key}",
-                maf: maxAltAlleleEntry.value / total,
-                //TODO Where to get these fields
-                qualityOfDepth: 0D,
-                ref: 'TODO',
-                alt: 'TOOD',
-                additionalInfo: [:]
+                chromosome: summary.chromosome,
+                position: summary.position,
+                rsId: summary.rsId,
+                mafAllele: mafAllele,
+                maf: mafEntry.value,
+                qualityOfDepth: summary.qualityOfDepth,
+                referenceAllele: summary.referenceAllele,
+                alternativeAlleles: altAlleles,
+                additionalInfo: additionalInfo,
+                genomicVariantTypes: genomicVariantTypes
         )
     }
 
@@ -314,6 +358,10 @@ class DataQueryResourceService implements DataQueryResource {
                 eq('datasourceId', studyId)
             }
             */
+            and {
+                order('chromosome')
+                order('position')
+            }
         }
         results
     }
