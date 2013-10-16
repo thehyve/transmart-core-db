@@ -2,6 +2,7 @@ package org.transmartproject.db.highdim
 
 class DeVariantSubjectSummary {
 
+    static final Integer REF_ALLELE = 0
     String chromosome
     Long position
     String subjectId
