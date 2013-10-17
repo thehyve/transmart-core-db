@@ -284,7 +284,7 @@ class DataQueryResourceService implements DataQueryResource {
         results
     }
 
-    private VcfValuesImpl calculateVcfValues(VcfValues summary, LinkedHashMap<Integer, Integer> alleleDistribution) {
+    private VcfValuesImpl calculateVcfValues(VcfValues summary, Map<Integer, Integer> alleleDistribution) {
         assert summary
 
         if(!alleleDistribution) return null
@@ -302,6 +302,7 @@ class DataQueryResourceService implements DataQueryResource {
         additionalInfo['AC'] = altAlleleDistribution.values().join(',')
         additionalInfo['AF'] = altAlleleFrequencies.values().collect{ String.format('%.2f', it) }.join(',')
         additionalInfo['AN'] = total.toString()
+        additionalInfo['VC'] = summary.additionalInfo['VC']
 
         def altAlleles = summary.getAltAllelesByPositions(altAlleleNums)
         def mafAllele = altAlleles[altAlleleNums.asList().indexOf(mafEntry.key)]
