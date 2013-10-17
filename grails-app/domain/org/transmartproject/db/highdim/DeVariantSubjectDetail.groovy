@@ -118,8 +118,8 @@ class DeVariantSubjectDetail implements VcfValues {
     }
 
     static GenomicVariantType getGenomicVariantType(String ref, String alt) {
-        def refCleaned = ref.replaceAll(/[^ACGT]/, '')
-        def altCleaned = alt.replaceAll(/[^ACGT]/, '')
+        def refCleaned = (ref ?: '').replaceAll(/[^ACGT]/, '')
+        def altCleaned = (alt ?: '').replaceAll(/[^ACGT]/, '')
 
         if(refCleaned.length() == 1 && altCleaned.length() == 1)
             return SNP

@@ -255,18 +255,18 @@ class DataQueryResourceService implements DataQueryResource {
             if(!cohortArr.next()) return []
             row = cohortArr.get()
 
-            summaryVcfValues.each { summary ->
-                def alleleDistribution = [:]
-                while(row && summary.chromosome == row[0]
+            summaryVcfValues.each { DeVariantSubjectDetail summary ->
+                def alleleDistribution = [:].withDefault { 0 }
+                while (row && summary.chromosome == row[0]
                         && summary.position == row[1]) {
                     def allele1 = row[2]
                     def allele2 = row[3]
-                    alleleDistribution[allele1] = (alleleDistribution[allele1] ?: 0) + 1
-                    alleleDistribution[allele2] = (alleleDistribution[allele2] ?: 0) + 1
+                    alleleDistribution[allele1]++
+                    alleleDistribution[allele2]++
 
-                    if(!cohortArr.next()) {
+                    if (!cohortArr.next()) {
                         VcfValues vcfValue = calculateVcfValues(summary, alleleDistribution)
-                        if(vcfValue)
+                        if (vcfValue)
                             results << vcfValue
                         return false
                     }
@@ -274,7 +274,7 @@ class DataQueryResourceService implements DataQueryResource {
                 }
 
                 VcfValues vcfValue = calculateVcfValues(summary, alleleDistribution)
-                if(vcfValue)
+                if (vcfValue)
                     results << vcfValue
             }
         } finally {
