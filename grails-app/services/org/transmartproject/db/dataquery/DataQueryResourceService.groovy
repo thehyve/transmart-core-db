@@ -230,10 +230,11 @@ class DataQueryResourceService implements DataQueryResource {
 
         def cohortArr = DeVariantSubjectSummary.createCriteria().scroll {
             projections {
-                property('chromosome')
-                property('position')
-                property('allele1')
-                property('allele2')
+                groupProperty('chromosome')
+                groupProperty('position')
+                groupProperty('allele1')
+                groupProperty('allele2')
+                rowCount()
             }
             or {
                 spec.segments.each { segment ->
@@ -261,8 +262,8 @@ class DataQueryResourceService implements DataQueryResource {
                         && summary.position == row[1]) {
                     def allele1 = row[2]
                     def allele2 = row[3]
-                    alleleDistribution[allele1]++
-                    alleleDistribution[allele2]++
+                    alleleDistribution[allele1] += row[4]
+                    alleleDistribution[allele2] += row[4]
 
                     if (!cohortArr.next()) {
                         VcfValues vcfValue = calculateVcfValues(summary, alleleDistribution)
