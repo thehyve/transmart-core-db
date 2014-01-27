@@ -18,4 +18,5 @@ class ProteinDataRow extends AbstractDataRow implements BioMarkerDataRow<Object>
     String getBioMarker() {
         unitProtId
     }
+
 }

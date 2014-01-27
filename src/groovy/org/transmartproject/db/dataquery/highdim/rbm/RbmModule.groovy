@@ -1,5 +1,6 @@
 package org.transmartproject.db.dataquery.highdim.rbm
 
+import com.google.common.collect.ImmutableSet
 import grails.orm.HibernateCriteriaBuilder
 import org.hibernate.ScrollableResults
 import org.hibernate.engine.SessionImplementor
@@ -13,6 +14,7 @@ import org.transmartproject.db.dataquery.highdim.DefaultHighDimensionTabularResu
 import org.transmartproject.db.dataquery.highdim.RepeatedEntriesCollectingTabularResult
 import org.transmartproject.db.dataquery.highdim.correlations.CorrelationTypesRegistry
 import org.transmartproject.db.dataquery.highdim.correlations.SearchKeywordDataConstraintFactory
+import org.transmartproject.db.dataquery.highdim.parameterproducers.AllDataProjectionFactory
 import org.transmartproject.db.dataquery.highdim.parameterproducers.DataRetrievalParameterFactory
 import org.transmartproject.db.dataquery.highdim.parameterproducers.SimpleRealProjectionsFactory
 
@@ -22,7 +24,13 @@ class RbmModule extends AbstractHighDimensionDataTypeModule {
 
     final String name = 'rbm'
 
+    final String description = "RBM data"
+
     final List<String> platformMarkerTypes = ['RBM']
+
+    private final Set<String> dataProperties = ImmutableSet.of('value', 'zscore')
+
+    private final Set<String> rowProperties = ImmutableSet.of('antigenName', 'uniprotId')
 
     @Autowired
     DataRetrievalParameterFactory standardAssayConstraintFactory
@@ -50,7 +58,8 @@ class RbmModule extends AbstractHighDimensionDataTypeModule {
     protected List<DataRetrievalParameterFactory> createProjectionFactories() {
         [ new SimpleRealProjectionsFactory(
                 (Projection.DEFAULT_REAL_PROJECTION): 'value',
-                (Projection.ZSCORE_PROJECTION):       'zscore') ]
+                (Projection.ZSCORE_PROJECTION):       'zscore'),
+        new AllDataProjectionFactory(dataProperties, rowProperties)]
     }
 
     @Override
@@ -113,8 +122,8 @@ class RbmModule extends AbstractHighDimensionDataTypeModule {
                                 assayIndexMap: collectedList[0].assayIndexMap,
                                 data: collectedList[0].data
                         )
-                    }
-                }
+    }
+}
         )
     }
 

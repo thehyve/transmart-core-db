@@ -1,5 +1,6 @@
 package org.transmartproject.db.dataquery.highdim.mirna
 
+import com.google.common.collect.ImmutableSet
 import grails.orm.HibernateCriteriaBuilder
 import org.hibernate.ScrollableResults
 import org.hibernate.engine.SessionImplementor
@@ -14,6 +15,7 @@ import org.transmartproject.db.dataquery.highdim.DefaultHighDimensionTabularResu
 import org.transmartproject.db.dataquery.highdim.correlations.CorrelationType
 import org.transmartproject.db.dataquery.highdim.correlations.CorrelationTypesRegistry
 import org.transmartproject.db.dataquery.highdim.correlations.SearchKeywordDataConstraintFactory
+import org.transmartproject.db.dataquery.highdim.parameterproducers.AllDataProjectionFactory
 import org.transmartproject.db.dataquery.highdim.parameterproducers.DataRetrievalParameterFactory
 import org.transmartproject.db.dataquery.highdim.parameterproducers.SimpleRealProjectionsFactory
 import org.transmartproject.db.dataquery.highdim.parameterproducers.StandardAssayConstraintFactory
@@ -27,7 +29,13 @@ class MirnaModule extends AbstractHighDimensionDataTypeModule {
 
     final String name = 'mirna'
 
+    final String description = "Messenger Interference RNA data"
+
     final List<String> platformMarkerTypes = ['MIRNA_QPCR', 'MIRNA_SEQ']
+
+    private final Set<String> dataProperties = ImmutableSet.of('rawIntensity', 'logIntensity', 'zscore')
+
+    private final Set<String> rowProperties = ImmutableSet.of('probeId', 'mirnaId')
 
     @Autowired
     StandardAssayConstraintFactory standardAssayConstraintFactory
@@ -66,7 +74,8 @@ class MirnaModule extends AbstractHighDimensionDataTypeModule {
     protected List<DataRetrievalParameterFactory> createProjectionFactories() {
         [ new SimpleRealProjectionsFactory(
                 (Projection.DEFAULT_REAL_PROJECTION): 'rawIntensity',
-                (Projection.ZSCORE_PROJECTION):       'zscore') ]
+                (Projection.ZSCORE_PROJECTION):       'zscore'),
+        new AllDataProjectionFactory(dataProperties, rowProperties)]
     }
 
     @Override
@@ -113,8 +122,8 @@ class MirnaModule extends AbstractHighDimensionDataTypeModule {
                 finalizeGroup:         { List list -> /* list of arrays with one element: a map */
                     def firstNonNullCell = list.find()
                     new MirnaProbeRow(
-                            label:         firstNonNullCell[0].probeId,
-                            bioMarker:     firstNonNullCell[0].mirna,
+                            probeId:       firstNonNullCell[0].probeId,
+                            mirnaId:       firstNonNullCell[0].mirna,
                             assayIndexMap: assayIndexes,
                             data:          list.collect { projection.doWithResult it?.getAt(0) }
                     )

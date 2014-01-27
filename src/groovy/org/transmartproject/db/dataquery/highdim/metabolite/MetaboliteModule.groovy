@@ -1,5 +1,6 @@
 package org.transmartproject.db.dataquery.highdim.metabolite
 
+import com.google.common.collect.ImmutableSet
 import grails.orm.HibernateCriteriaBuilder
 import org.hibernate.ScrollableResults
 import org.hibernate.engine.SessionImplementor
@@ -13,6 +14,7 @@ import org.transmartproject.db.dataquery.highdim.DefaultHighDimensionTabularResu
 import org.transmartproject.db.dataquery.highdim.correlations.CorrelationType
 import org.transmartproject.db.dataquery.highdim.correlations.CorrelationTypesRegistry
 import org.transmartproject.db.dataquery.highdim.correlations.SearchKeywordDataConstraintFactory
+import org.transmartproject.db.dataquery.highdim.parameterproducers.AllDataProjectionFactory
 import org.transmartproject.db.dataquery.highdim.parameterproducers.DataRetrievalParameterFactory
 import org.transmartproject.db.dataquery.highdim.parameterproducers.SimpleRealProjectionsFactory
 
@@ -24,6 +26,12 @@ class MetaboliteModule extends AbstractHighDimensionDataTypeModule {
     final String name = 'metabolite'
 
     final List<String> platformMarkerTypes = ['METABOLOMICS']
+
+    final String description = 'Metabolomics data'
+
+    private final Set<String> dataProperties = ImmutableSet.of('zscore')
+
+    private final Set<String> rowProperties = ImmutableSet.of('hmdbId', 'biochemicalName')
 
     @Autowired
     DataRetrievalParameterFactory standardAssayConstraintFactory
@@ -76,7 +84,8 @@ class MetaboliteModule extends AbstractHighDimensionDataTypeModule {
     protected List<DataRetrievalParameterFactory> createProjectionFactories() {
         [ new SimpleRealProjectionsFactory(
                 (Projection.DEFAULT_REAL_PROJECTION): 'raw_intensity',
-                (Projection.ZSCORE_PROJECTION):       'zscore') ]
+                (Projection.ZSCORE_PROJECTION):       'zscore'),
+        new AllDataProjectionFactory(dataProperties, rowProperties)]
     }
 
     @Override

@@ -1,5 +1,6 @@
 package org.transmartproject.db.dataquery.highdim.rnaseqcog
 
+import com.google.common.collect.ImmutableSet
 import grails.orm.HibernateCriteriaBuilder
 import org.hibernate.ScrollableResults
 import org.hibernate.engine.SessionImplementor
@@ -13,6 +14,7 @@ import org.transmartproject.db.dataquery.highdim.DefaultHighDimensionTabularResu
 import org.transmartproject.db.dataquery.highdim.RepeatedEntriesCollectingTabularResult
 import org.transmartproject.db.dataquery.highdim.correlations.CorrelationTypesRegistry
 import org.transmartproject.db.dataquery.highdim.correlations.SearchKeywordDataConstraintFactory
+import org.transmartproject.db.dataquery.highdim.parameterproducers.AllDataProjectionFactory
 import org.transmartproject.db.dataquery.highdim.parameterproducers.DataRetrievalParameterFactory
 import org.transmartproject.db.dataquery.highdim.parameterproducers.SimpleRealProjectionsFactory
 import org.transmartproject.db.dataquery.highdim.parameterproducers.StandardAssayConstraintFactory
@@ -28,7 +30,13 @@ class RnaSeqCogModule extends AbstractHighDimensionDataTypeModule {
 
     final String name = 'rnaseq_cog'
 
+    final String description = "RNA Sequence data"
+
     final List<String> platformMarkerTypes = ['RNASEQ']
+
+    private final Set<String> dataProperties = ImmutableSet.of('rawIntensity', 'zscore')
+
+    private final Set<String> rowProperties = ImmutableSet.of('annotationId', 'geneSymbol', 'geneId')
 
     @Autowired
     StandardAssayConstraintFactory standardAssayConstraintFactory
@@ -52,6 +60,7 @@ class RnaSeqCogModule extends AbstractHighDimensionDataTypeModule {
 
                 property 'ann.id',           'annotationId'
                 property 'ann.geneSymbol',   'geneSymbol'
+                property 'ann.geneId',       'geneId'
             }
 
             order 'ann.id',         'asc'
@@ -81,7 +90,8 @@ class RnaSeqCogModule extends AbstractHighDimensionDataTypeModule {
                     def firstNonNullCell = list.find()
                     new RnaSeqCogDataRow(
                             annotationId:  firstNonNullCell[0].annotationId,
-                            geneSymbol:          firstNonNullCell[0].geneSymbol,
+                            geneSymbol:    firstNonNullCell[0].geneSymbol,
+                            geneId:        firstNonNullCell[0].geneId,
                             assayIndexMap: assayIndexMap,
                             data:          list.collect { projection.doWithResult it?.getAt(0) }
                     )
@@ -96,11 +106,12 @@ class RnaSeqCogModule extends AbstractHighDimensionDataTypeModule {
                         new RnaSeqCogDataRow(
                                 annotationId:  collectedList[0].annotationId,
                                 geneSymbol:    collectedList*.geneSymbol.join('/'),
+                                geneId:        collectedList*.geneId.join('/'),
                                 assayIndexMap: collectedList[0].assayIndexMap,
                                 data:          collectedList[0].data
                         )
-                    }
-                }
+            }
+            }
         )
     }
 
@@ -120,6 +131,7 @@ class RnaSeqCogModule extends AbstractHighDimensionDataTypeModule {
     protected List<DataRetrievalParameterFactory> createProjectionFactories() {
         [ new SimpleRealProjectionsFactory(
                 (Projection.DEFAULT_REAL_PROJECTION): 'rawIntensity',
-                (Projection.ZSCORE_PROJECTION):       'zscore') ]
+                (Projection.ZSCORE_PROJECTION):       'zscore'),
+        new AllDataProjectionFactory(dataProperties, rowProperties)]
     }
 }

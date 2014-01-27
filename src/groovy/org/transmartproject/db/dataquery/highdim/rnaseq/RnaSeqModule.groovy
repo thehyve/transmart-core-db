@@ -1,5 +1,6 @@
 package org.transmartproject.db.dataquery.highdim.rnaseq
 
+import com.google.common.collect.ImmutableSet
 import grails.orm.HibernateCriteriaBuilder
 
 import org.hibernate.ScrollableResults
@@ -15,6 +16,7 @@ import org.transmartproject.db.dataquery.highdim.AbstractHighDimensionDataTypeMo
 import org.transmartproject.db.dataquery.highdim.DefaultHighDimensionTabularResult
 import org.transmartproject.db.dataquery.highdim.chromoregion.ChromosomeSegmentConstraintFactory
 import org.transmartproject.db.dataquery.highdim.chromoregion.RegionRowImpl
+import org.transmartproject.db.dataquery.highdim.parameterproducers.AllDataProjectionFactory
 import org.transmartproject.db.dataquery.highdim.parameterproducers.DataRetrievalParameterFactory
 import org.transmartproject.db.dataquery.highdim.parameterproducers.MapBasedParameterFactory
 import org.transmartproject.db.dataquery.highdim.acgh.AcghDataTypeResource
@@ -31,6 +33,12 @@ class RnaSeqModule extends AbstractHighDimensionDataTypeModule {
     final List<String> platformMarkerTypes = ['Chromosomal']
 
     final String name = 'rnaseq'
+
+    final String description = "RNA Sequence data"
+
+    private final Set<String> dataProperties = ImmutableSet.of('trialName', 'readCount')
+
+    private final Set<String> rowProperties = ImmutableSet.of()
 
     @Autowired
     DataRetrievalParameterFactory standardAssayConstraintFactory
@@ -71,7 +79,8 @@ class RnaSeqModule extends AbstractHighDimensionDataTypeModule {
                             }
                             new RnaSeqValuesProjection()
                         }
-                )
+                ),
+                new AllDataProjectionFactory(dataProperties, rowProperties)
         ]
     }
 

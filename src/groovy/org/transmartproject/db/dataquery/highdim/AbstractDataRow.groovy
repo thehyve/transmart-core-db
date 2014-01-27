@@ -23,4 +23,5 @@ abstract class AbstractDataRow implements DataRow<AssayColumn, Object> {
     Iterator<Object> iterator() {
         data.iterator()
     }
+
 }

@@ -22,4 +22,5 @@ class RbmRow extends AbstractDataRow implements BioMarkerDataRow<Object> {
     String getBioMarker() {
         uniprotId
     }
+
 }

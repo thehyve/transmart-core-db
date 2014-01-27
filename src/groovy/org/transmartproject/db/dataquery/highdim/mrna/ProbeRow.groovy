@@ -11,6 +11,8 @@ class ProbeRow extends AbstractDataRow implements BioMarkerDataRow<Object> {
 
     String geneSymbol
 
+    String geneId
+
     @Override
     String getLabel() {
         probe
@@ -20,4 +22,5 @@ class ProbeRow extends AbstractDataRow implements BioMarkerDataRow<Object> {
     String getBioMarker() {
         geneSymbol
     }
+
 }
