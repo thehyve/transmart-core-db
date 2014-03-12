@@ -5,7 +5,10 @@ import groovy.transform.Canonical
 import org.transmartproject.core.exceptions.InvalidRequestException
 
 @Canonical
-class DefaultTrialNameConstraint extends AbstractAssayConstraint {
+class DefaultTrialNameConstraint extends AbstractAssayConstraint
+        implements Serializable {
+
+    private static final long serialVersionUID = 1L
 
     String trialName
 

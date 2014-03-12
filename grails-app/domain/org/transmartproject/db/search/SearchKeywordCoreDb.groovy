@@ -1,6 +1,8 @@
 package org.transmartproject.db.search
 
-class SearchKeywordCoreDb {
+class SearchKeywordCoreDb implements Serializable {
+
+    private static final long serialVersionUID = 1L
 
 	String keyword
     /* usage patterns shows joins of bioDataId with:

@@ -6,7 +6,9 @@ import org.transmartproject.core.dataquery.assay.Timepoint
 import org.transmartproject.core.dataquery.assay.TissueType
 import org.transmartproject.db.i2b2data.PatientDimension
 
-class DeSubjectSampleMapping implements Assay {
+class DeSubjectSampleMapping implements Assay, Serializable {
+
+    private static final long serialVersionUID = 1L
 
     DeGplInfo platform
 

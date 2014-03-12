@@ -1,5 +1,6 @@
 package org.transmartproject.db.dataquery.highdim.correlations
 
+import com.google.common.collect.Lists
 import grails.orm.HibernateCriteriaBuilder
 import grails.util.Holders
 import groovy.util.logging.Log4j
@@ -24,7 +25,9 @@ import org.transmartproject.db.search.SearchKeywordCoreDb
  * - go back to bio_marker to find the PRIMARY_EXTERNAL_ID of these new biomarker ids
  */
 @Log4j
-class CorrelatedBiomarkersDataConstraint implements CriteriaDataConstraint {
+class CorrelatedBiomarkersDataConstraint implements CriteriaDataConstraint, Serializable {
+
+    private static final long serialVersionUID = 1L
 
     List<SearchKeywordCoreDb> searchKeywords
 
@@ -87,4 +90,21 @@ class CorrelatedBiomarkersDataConstraint implements CriteriaDataConstraint {
                     replaceAll(/\{property\}/, propertyColumn)
         }
     }
+
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        if (!(searchKeywords instanceof Serializable)) {
+            searchKeywords = Lists.newArrayList(searchKeywords)
+        }
+        if (!(correlationTypes instanceof Serializable)) {
+            correlationTypes = Lists.newArrayList(correlationTypes)
+        }
+        out.defaultWriteObject()
+    }
+
+    private void readObject(ObjectInputStream input)
+            throws IOException, ClassNotFoundException {
+        input.defaultReadObject()
+    }
+
+    private void readObjectNoData() throws ObjectStreamException {}
 }

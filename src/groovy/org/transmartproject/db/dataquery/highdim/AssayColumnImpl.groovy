@@ -5,7 +5,9 @@ import org.transmartproject.core.dataquery.assay.Assay
 import org.transmartproject.core.dataquery.highdim.AssayColumn
 
 @ToString(includes = ['assay', 'label'])
-class AssayColumnImpl implements AssayColumn {
+class AssayColumnImpl implements AssayColumn, Serializable {
+
+    private static final long serialVersionUID = 1L
 
     @Delegate
     private Assay assay

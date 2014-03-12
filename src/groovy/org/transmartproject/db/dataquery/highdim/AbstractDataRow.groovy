@@ -3,7 +3,9 @@ package org.transmartproject.db.dataquery.highdim
 import org.transmartproject.core.dataquery.DataRow
 import org.transmartproject.core.dataquery.highdim.AssayColumn
 
-abstract class AbstractDataRow implements DataRow<AssayColumn, Object> {
+abstract class AbstractDataRow implements DataRow<AssayColumn, Object>, Serializable {
+
+    private static final long serialVersionUID = 1L
 
     Map<AssayColumn, Integer> assayIndexMap
 

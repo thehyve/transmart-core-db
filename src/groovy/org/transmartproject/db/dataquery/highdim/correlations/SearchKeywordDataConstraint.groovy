@@ -9,7 +9,9 @@ import org.transmartproject.db.dataquery.highdim.dataconstraints.CriteriaDataCon
 import org.transmartproject.db.dataquery.highdim.dataconstraints.DisjunctionDataConstraint
 import org.transmartproject.db.search.SearchKeywordCoreDb
 
-class SearchKeywordDataConstraint implements CriteriaDataConstraint {
+class SearchKeywordDataConstraint implements CriteriaDataConstraint, Serializable {
+
+    private static final long serialVersionUID = 1L
 
     CorrelatedBiomarkersDataConstraint innerConstraint = new CorrelatedBiomarkersDataConstraint()
 

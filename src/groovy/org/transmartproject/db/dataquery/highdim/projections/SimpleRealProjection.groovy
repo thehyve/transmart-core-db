@@ -7,7 +7,9 @@ import org.apache.commons.logging.LogFactory
 import org.hibernate.criterion.ProjectionList
 import org.hibernate.criterion.Projections
 
-class SimpleRealProjection implements CriteriaProjection<Double> {
+class SimpleRealProjection implements CriteriaProjection<Double>, Serializable {
+
+    private static final long serialVersionUID = 1L
 
     static Log LOG = LogFactory.getLog(this)
 
