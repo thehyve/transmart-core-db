@@ -12,7 +12,8 @@ import org.transmartproject.db.dataquery.highdim.HighDimTestData
 import static groovy.util.GroovyAssert.shouldFail
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
-import static org.transmartproject.db.dataquery.highdim.HighDimTestData.save
+import static org.transmartproject.db.BaseTestData.save
+
 /**
  * Created by glopes on 11/23/13.
  */

@@ -5,11 +5,10 @@ import org.transmartproject.db.dataquery.highdim.DeGplInfo
 import org.transmartproject.db.dataquery.highdim.DeSubjectSampleMapping
 import org.transmartproject.db.dataquery.highdim.HighDimTestData
 import org.transmartproject.db.dataquery.highdim.SampleBioMarkerTestData
+import org.transmartproject.db.i2b2data.I2b2Data
 import org.transmartproject.db.i2b2data.PatientDimension
 
-import static org.transmartproject.db.dataquery.highdim.HighDimTestData.save
-
-class RnaSeqCogTestData {
+class RnaSeqCogTestData extends HighDimTestData {
 
     public static final String TRIAL_NAME = 'RNASEQ_COG_SAMP_TRIAL'
 
@@ -25,7 +24,7 @@ class RnaSeqCogTestData {
     }()
 
     List<PatientDimension> patients =
-        HighDimTestData.createTestPatients(2, -300, TRIAL_NAME)
+        I2b2Data.createTestPatients(2, -300, TRIAL_NAME)
 
     List<DeSubjectSampleMapping> assays =
         HighDimTestData.createTestAssays(patients, -400, platform, TRIAL_NAME)

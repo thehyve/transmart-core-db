@@ -1,11 +1,10 @@
 package org.transmartproject.db.ontology
 
+import org.transmartproject.db.BaseTestData
 import org.transmartproject.db.TestDataHelper
 import org.transmartproject.db.i2b2data.ConceptDimension
 
-import static org.transmartproject.db.TestDataHelper.save
-
-class ConceptTestData {
+class ConceptTestData extends BaseTestData {
 
     List<TableAccess> tableAccesses
     List<I2b2> i2b2List

@@ -5,9 +5,9 @@ import org.junit.Before
 import org.junit.Test
 import org.transmartproject.core.dataquery.Patient
 import org.transmartproject.core.ontology.OntologyTerm
+import org.transmartproject.db.BaseTestData
 import org.transmartproject.db.concept.ConceptKey
 import org.transmartproject.db.dataquery.clinical.ClinicalTestData
-import org.transmartproject.db.dataquery.highdim.HighDimTestData
 import org.transmartproject.db.i2b2data.I2b2Data
 import org.transmartproject.db.test.RuleBasedIntegrationTestMixin
 
@@ -104,10 +104,10 @@ class I2b2Tests {
         def patients = I2b2Data.createTestPatients(5, -100, 'SAMPLE TRIAL')
         def observations = createObservations(concepts, patients)
 
-        HighDimTestData.save concepts
-        HighDimTestData.save patients
-        HighDimTestData.save observations
-        HighDimTestData.save ConceptTestData.createConceptDimensions(concepts)
+        BaseTestData.save concepts
+        BaseTestData.save patients
+        BaseTestData.save observations
+        BaseTestData.save ConceptTestData.createConceptDimensions(concepts)
 
         def result = concepts[0].getPatients()
         assertThat result, containsInAnyOrder(

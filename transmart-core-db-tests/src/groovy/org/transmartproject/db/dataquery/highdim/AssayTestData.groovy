@@ -1,15 +1,16 @@
 package org.transmartproject.db.dataquery.highdim
 
+import org.transmartproject.db.BaseTestData
 import org.transmartproject.db.i2b2data.ConceptDimension
+import org.transmartproject.db.i2b2data.I2b2Data
 import org.transmartproject.db.i2b2data.PatientDimension
 import org.transmartproject.db.ontology.I2b2
 import org.transmartproject.db.ontology.TableAccess
 
-import static org.transmartproject.db.dataquery.highdim.HighDimTestData.save
 import static org.transmartproject.db.ontology.ConceptTestData.createI2b2
 import static org.transmartproject.db.ontology.ConceptTestData.createTableAccess
 
-class AssayTestData {
+class AssayTestData extends BaseTestData {
 
     DeGplInfo platform = {
         def res = new DeGplInfo(
@@ -20,7 +21,7 @@ class AssayTestData {
         res
     }()
 
-    List<PatientDimension> patients = HighDimTestData.createTestPatients(3, -100)
+    List<PatientDimension> patients = I2b2Data.createTestPatients(3, -100)
 
     List<TableAccess> i2b2TopConcepts = [
             createTableAccess(level: 0, fullName: '\\foo\\', name: 'foo',

@@ -4,7 +4,7 @@ import org.transmartproject.db.dataquery.clinical.ClinicalTestData
 import org.transmartproject.db.i2b2data.I2b2Data
 import org.transmartproject.db.ontology.ConceptTestData
 
-class TestData {
+class TestData extends BaseTestData {
 
     ConceptTestData conceptData
     I2b2Data i2b2Data

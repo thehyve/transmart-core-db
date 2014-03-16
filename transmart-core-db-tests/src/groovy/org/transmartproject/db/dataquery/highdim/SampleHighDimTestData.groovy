@@ -2,12 +2,13 @@ package org.transmartproject.db.dataquery.highdim
 
 import org.transmartproject.db.i2b2data.PatientDimension
 
-import static org.transmartproject.db.dataquery.highdim.HighDimTestData.*
+import static org.transmartproject.db.i2b2data.I2b2Data.createTestPatients
+
 /**
  * Sample, generic high dimensional test data, not bound to any specific
  * data type.
  */
-class SampleHighDimTestData {
+class SampleHighDimTestData extends HighDimTestData {
 
     public static final String TRIAL_NAME = 'GENERIC_SAMPLE_TRIAL'
 

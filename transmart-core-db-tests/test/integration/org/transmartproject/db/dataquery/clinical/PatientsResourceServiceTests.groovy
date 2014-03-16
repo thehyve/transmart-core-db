@@ -8,7 +8,7 @@ import org.transmartproject.db.i2b2data.I2b2Data
 import org.transmartproject.db.test.RuleBasedIntegrationTestMixin
 
 import static groovy.util.GroovyAssert.shouldFail
-import static org.transmartproject.db.dataquery.highdim.HighDimTestData.save
+import static org.transmartproject.db.BaseTestData.save
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
 

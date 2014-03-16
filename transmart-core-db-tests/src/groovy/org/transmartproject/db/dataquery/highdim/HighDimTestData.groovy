@@ -1,12 +1,11 @@
 package org.transmartproject.db.dataquery.highdim
 
-import org.transmartproject.db.TestDataHelper
+import org.transmartproject.db.BaseTestData
 import org.transmartproject.db.biomarker.BioDataCorrelDescr
 import org.transmartproject.db.biomarker.BioDataCorrelationCoreDb
 import org.transmartproject.db.biomarker.BioMarkerCoreDb
 import org.transmartproject.db.dataquery.highdim.correlations.CorrelationType
 import org.transmartproject.db.dataquery.highdim.correlations.CorrelationTypesRegistry
-import org.transmartproject.db.i2b2data.I2b2Data
 import org.transmartproject.db.i2b2data.PatientDimension
 import org.transmartproject.db.search.SearchGeneSignature
 import org.transmartproject.db.search.SearchKeywordCoreDb
@@ -14,7 +13,7 @@ import org.transmartproject.db.search.SearchKeywordCoreDb
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
 
-class HighDimTestData {
+class HighDimTestData extends BaseTestData {
 
     static List<DeSubjectSampleMapping> createTestAssays(List<PatientDimension> patients,
                                                          long baseId,
@@ -45,11 +44,6 @@ class HighDimTestData {
             s.id = --baseId
             s
         }
-    }
-
-    //to be removed (unnecessary indirection)
-    static List<PatientDimension> createTestPatients(int n, long baseId, String trialName = 'SAMP_TRIAL') {
-        I2b2Data.createTestPatients(n, baseId, trialName)
     }
 
     /* returns list with two elements: the biomarkers, and the search keywords */
@@ -144,11 +138,6 @@ class HighDimTestData {
         (0..from.size() - 1).collect { i ->
             createCorrelation baseId - 1 - i, from[i], to[i]
         }
-    }
-
-    //to be removed (unnecessary indirection)
-    static void save(List objects) {
-        TestDataHelper.save(objects)
     }
 
 }

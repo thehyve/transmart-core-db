@@ -12,7 +12,7 @@ import org.transmartproject.core.dataquery.highdim.dataconstraints.DataConstrain
 import org.transmartproject.core.dataquery.highdim.projections.Projection
 import org.transmartproject.core.exceptions.InvalidArgumentsException
 import org.transmartproject.core.exceptions.UnexpectedResultException
-import org.transmartproject.db.dataquery.highdim.HighDimTestData
+import org.transmartproject.db.BaseTestData
 import org.transmartproject.db.search.SearchKeywordCoreDb
 
 import static groovy.test.GroovyAssert.shouldFail
@@ -158,7 +158,7 @@ abstract class MirnaSharedEndToEndRetrievalTests {
     private TabularResult testWithMissingDataAssay(Long baseAssayId) {
         def extraAssays = createTestAssays([ testData.patients[0] ], baseAssayId,
                 testData.platform, MirnaTestData.TRIAL_NAME)
-        HighDimTestData.save extraAssays
+        BaseTestData.save extraAssays
 
         List assayConstraints = [trialNameConstraint]
 

@@ -13,7 +13,7 @@ import org.transmartproject.core.dataquery.highdim.HighDimensionResource
 import org.transmartproject.core.dataquery.highdim.assayconstraints.AssayConstraint
 import org.transmartproject.core.dataquery.highdim.dataconstraints.DataConstraint
 import org.transmartproject.core.dataquery.highdim.projections.Projection
-import org.transmartproject.db.dataquery.highdim.HighDimTestData
+import org.transmartproject.db.BaseTestData
 import org.transmartproject.db.dataquery.highdim.mirna.MirnaTestData
 import org.transmartproject.db.test.RuleBasedIntegrationTestMixin
 
@@ -151,7 +151,7 @@ class RnaSeqCogEndToEndRetrievalTests {
     private TabularResult testWithMissingDataAssay(Long baseAssayId) {
         def extraAssays = createTestAssays([ testData.patients[0] ], baseAssayId,
                 testData.platform, MirnaTestData.TRIAL_NAME)
-        HighDimTestData.save extraAssays
+        BaseTestData.save extraAssays
 
         List assayConstraints = [trialNameConstraint]
 

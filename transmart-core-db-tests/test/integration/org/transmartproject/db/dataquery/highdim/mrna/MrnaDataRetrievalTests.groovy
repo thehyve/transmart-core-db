@@ -14,8 +14,8 @@ import org.transmartproject.core.dataquery.TabularResult
 import org.transmartproject.core.dataquery.assay.Assay
 import org.transmartproject.core.dataquery.highdim.AssayColumn
 import org.transmartproject.core.dataquery.highdim.HighDimensionDataTypeResource
+import org.transmartproject.db.BaseTestData
 import org.transmartproject.db.dataquery.highdim.DeSubjectSampleMapping
-import org.transmartproject.db.dataquery.highdim.HighDimTestData
 import org.transmartproject.db.dataquery.highdim.HighDimensionDataTypeModule
 import org.transmartproject.db.dataquery.highdim.HighDimensionDataTypeResourceImpl
 import org.transmartproject.db.dataquery.highdim.assayconstraints.AssayIdListConstraint
@@ -222,7 +222,7 @@ class MrnaDataRetrievalTests {
     private TabularResult testWithMissingDataAssay(Long baseAssayId) {
         def extraAssays = createTestAssays([ testData.patients[0] ], baseAssayId,
                 testData.platform, MrnaTestData.TRIAL_NAME)
-        HighDimTestData.save extraAssays
+        BaseTestData.save extraAssays
 
         List assayConstraints = [trialNameConstraint]
 

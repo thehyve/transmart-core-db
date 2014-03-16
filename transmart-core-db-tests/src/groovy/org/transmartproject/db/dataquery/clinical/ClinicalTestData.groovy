@@ -3,6 +3,7 @@ package org.transmartproject.db.dataquery.clinical
 import org.transmartproject.core.dataquery.Patient
 import org.transmartproject.core.ontology.OntologyTerm
 import org.transmartproject.core.querytool.QueryResult
+import org.transmartproject.db.BaseTestData
 import org.transmartproject.db.TestDataHelper
 import org.transmartproject.db.i2b2data.ConceptDimension
 import org.transmartproject.db.i2b2data.ObservationFact
@@ -13,7 +14,7 @@ import org.transmartproject.db.querytool.QtQueryMaster
 import static org.transmartproject.db.querytool.QueryResultData.createQueryResult
 import static org.transmartproject.db.querytool.QueryResultData.getQueryResultFromMaster
 
-class ClinicalTestData {
+class ClinicalTestData extends BaseTestData {
 
     List<Patient> patients
     List<ObservationFact> facts
@@ -101,8 +102,8 @@ class ClinicalTestData {
     }
 
     void saveAll() {
-        TestDataHelper.save([patientsQueryMaster])
-        TestDataHelper.save facts
+        save([patientsQueryMaster])
+        save facts
     }
 
 }

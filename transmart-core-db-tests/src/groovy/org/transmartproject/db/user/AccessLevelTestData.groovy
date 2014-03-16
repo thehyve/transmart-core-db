@@ -1,5 +1,6 @@
 package org.transmartproject.db.user
 
+import org.transmartproject.db.BaseTestData
 import org.transmartproject.db.accesscontrol.AccessLevel
 import org.transmartproject.db.accesscontrol.SecuredObject
 import org.transmartproject.db.accesscontrol.SecuredObjectAccess
@@ -7,10 +8,9 @@ import org.transmartproject.db.ontology.ConceptTestData
 import org.transmartproject.db.ontology.I2b2
 import org.transmartproject.db.ontology.I2b2Secure
 
-import static org.transmartproject.db.dataquery.highdim.HighDimTestData.save
 import static org.transmartproject.db.ontology.ConceptTestData.createI2b2Secure
 
-class AccessLevelTestData {
+class AccessLevelTestData extends BaseTestData {
 
     public static final String EVERYONE_GROUP_NAME = 'EVERYONE_GROUP'
 

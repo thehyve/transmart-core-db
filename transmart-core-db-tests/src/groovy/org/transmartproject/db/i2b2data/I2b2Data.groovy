@@ -1,8 +1,8 @@
 package org.transmartproject.db.i2b2data
 
-import static org.transmartproject.db.TestDataHelper.save
+import org.transmartproject.db.BaseTestData
 
-class I2b2Data {
+class I2b2Data extends BaseTestData {
 
     String trialName
     List<PatientDimension> patients

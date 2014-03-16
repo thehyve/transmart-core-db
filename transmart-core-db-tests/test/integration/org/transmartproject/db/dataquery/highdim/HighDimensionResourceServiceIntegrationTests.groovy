@@ -14,8 +14,8 @@ import org.transmartproject.db.querytool.QtQueryMaster
 import static groovy.util.GroovyAssert.shouldFail
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
-import static org.transmartproject.db.dataquery.highdim.HighDimTestData.createTestPatients
-import static org.transmartproject.db.dataquery.highdim.HighDimTestData.save
+import static org.transmartproject.db.i2b2data.I2b2Data.createTestPatients
+import static org.transmartproject.db.BaseTestData.save
 import static org.transmartproject.db.querytool.QueryResultData.createQueryResult
 import static org.transmartproject.db.querytool.QueryResultData.getQueryResultFromMaster
 import static org.transmartproject.db.test.Matchers.hasSameInterfaceProperties
