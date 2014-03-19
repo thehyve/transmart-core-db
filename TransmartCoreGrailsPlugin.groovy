@@ -1,6 +1,9 @@
 import org.springframework.stereotype.Component
 import org.transmartproject.db.dataquery.highdim.AbstractHighDimensionDataTypeModule
 import org.transmartproject.db.http.BusinessExceptionResolver
+import org.transmartproject.db.jobs.JobExecutionsHelper
+import org.transmartproject.db.jobs.JobsResourceImpl
+import org.transmartproject.db.jobs.providers.JobsRegistryImpl
 import org.transmartproject.db.support.DatabasePortabilityService
 import org.transmartproject.db.support.MarshallerRegistrarService
 
@@ -61,6 +64,10 @@ A runtime dependency for tranSMART that implements the Core API
                     type:       'annotation',
                     expression: Component.canonicalName)
         }
+
+        jobExecutionsHelper(JobExecutionsHelper)
+        jobsResource(JobsResourceImpl)
+        jobsRegistry(JobsRegistryImpl)
 
         // Config
         def config = application.config

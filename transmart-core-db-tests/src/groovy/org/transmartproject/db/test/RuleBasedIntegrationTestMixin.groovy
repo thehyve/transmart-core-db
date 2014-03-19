@@ -5,6 +5,7 @@ import grails.test.mixin.integration.IntegrationTestMixin
 import groovy.transform.CompileStatic
 import groovy.transform.TypeCheckingMode
 import groovy.util.logging.Log4j
+import org.codehaus.groovy.grails.commons.spring.GrailsWebApplicationContext
 import org.codehaus.groovy.grails.test.runner.phase.IntegrationTestPhaseConfigurer
 import org.codehaus.groovy.grails.test.support.GrailsTestInterceptor
 import org.codehaus.groovy.grails.test.support.GrailsTestMode
@@ -48,17 +49,23 @@ class RuleBasedIntegrationTestMixin implements TestMixinTargetAware {
     void setTarget(Object target) {
         this.target = target
         try {
-            final applicationContext = IntegrationTestPhaseConfigurer.currentApplicationContext
             if(applicationContext && target) {
-                interceptor = new GrailsTestInterceptor(target, new GrailsTestMode( autowire: true,
+                interceptor = new GrailsTestInterceptor(target, new GrailsTestMode(
+                        autowire: true,
                         wrapInRequestEnvironment: true,
-                        wrapInTransaction: target.hasProperty('transactional') ? target['transactional'] : true),
+                        wrapInTransaction: target.hasProperty('transactional') ?
+                                target['transactional'] :
+                                true),
                         applicationContext,
                         ['Spec', 'Specification','Test', 'Tests'] as String[] )
             }
         } catch (IllegalStateException ise) {
             // ignore, thrown when application context hasn't been bootstrapped
         }
+    }
+
+    GrailsWebApplicationContext getApplicationContext() {
+        IntegrationTestPhaseConfigurer.currentApplicationContext
     }
 
     @Rule
