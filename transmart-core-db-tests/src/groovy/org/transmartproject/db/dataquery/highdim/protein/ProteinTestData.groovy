@@ -18,7 +18,7 @@ class ProteinTestData extends HighDimTestData {
         def res = new DeGplInfo(
                 title: 'Bogus protein platform',
                 organism: 'Homo Sapiens',
-                markerTypeId: 'BOGUS PROTEIN MARKER TYPE') // ?? what should be here
+                markerType: 'BOGUS PROTEIN MARKER TYPE') // ?? what should be here
         res.id = 'BOGUS_PROTEIN_PLATFORM'                  // ?? what should be here
         res
     }()

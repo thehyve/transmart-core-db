@@ -16,7 +16,7 @@ class AssayTestData extends BaseTestData {
         def res = new DeGplInfo(
                 title: 'Affymetrix Human Genome U133A 2.0 Array',
                 organism: 'Homo Sapiens',
-                markerTypeId: 'Gene Expression')
+                markerType: 'Gene Expression')
         res.id = 'BOGUSGPL570'
         res
     }()

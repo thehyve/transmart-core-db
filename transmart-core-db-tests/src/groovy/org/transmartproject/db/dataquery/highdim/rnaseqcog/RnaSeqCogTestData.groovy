@@ -18,7 +18,7 @@ class RnaSeqCogTestData extends HighDimTestData {
         def res = new DeGplInfo(
                 title: 'Bogus RNA-Seq platform',
                 organism: 'Homo Sapiens',
-                markerTypeId: 'BOGUS RNA-SEQ MARKER TYPE') // ?? what should be here
+                markerType: 'BOGUS RNA-SEQ MARKER TYPE') // ?? what should be here
         res.id = 'BOGUS_RNA-SEQ_PLATFORM'                  // ?? what should be here
         res
     }()

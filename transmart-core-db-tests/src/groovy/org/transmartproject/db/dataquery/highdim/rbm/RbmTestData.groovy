@@ -19,7 +19,7 @@ class RbmTestData extends HighDimTestData {
         def res = new DeGplInfo(
                 title: 'RBM platform',
                 organism: 'Homo Sapiens',
-                markerTypeId: 'RBM')
+                markerType: 'RBM')
         res.id = 'BOGUSRBMplatform'
         res
     }()

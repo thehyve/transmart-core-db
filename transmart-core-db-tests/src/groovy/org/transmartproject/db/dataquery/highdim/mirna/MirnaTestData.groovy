@@ -17,7 +17,7 @@ class MirnaTestData extends HighDimTestData {
         def res = new DeGplInfo(
                 title: 'TaqMan® Rodent MicroRNA Array v3.0 A/B',
                 organism: 'Mus musculus',
-                markerTypeId: 'MIRNA_SEQ')
+                markerType: 'MIRNA_SEQ')
         res.id = 'BOGUSGPL15466'
         res
     }()
