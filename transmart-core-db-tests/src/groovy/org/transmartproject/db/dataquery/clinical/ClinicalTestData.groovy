@@ -26,17 +26,28 @@ class ClinicalTestData extends BaseTestData {
     }
 
     static ClinicalTestData createDefault(List<I2b2> concepts, List<Patient> patients) {
-        def facts = createFacts(2, concepts, patients)
+        def facts = createDiagonalFacts(2, concepts, patients)
         new ClinicalTestData(patients: patients, facts: facts)
     }
 
     /**
+     * Creates <code>count<code> facts from <code>count</code> leaf concepts
+     * and <code>count</code> patients. Non-leaf concepts are ignored.
+     *
+     * All <code>count</code> patients and concepts will have exactly one
+     * observation. The patients and concepts will be paired according to the
+     * order they appear in their lists. The first patient will be paired with
+     * the first concept, the second with the second, and so on.
+     *
+     * All the observations created will be numeric, with value
+     * <code>10^i+1</code>, where <code>i = 0, 1, ... count - 1</code>.
+     *
      * @param count number of facts to be created and expected minimum amount of patients and leaf concepts
      * @param concepts
      * @param patients
      * @return facts for leaf_concept[0] / patients[0], leaf_concept[1] / patients[1], etc...
      */
-    static List<ObservationFact> createFacts(int count, List<I2b2> concepts, List<Patient> patients) {
+    static List<ObservationFact> createDiagonalFacts(int count, List<I2b2> concepts, List<Patient> patients) {
 
         assert patients.size() >= count
 
@@ -48,7 +59,8 @@ class ClinicalTestData extends BaseTestData {
 
         def facts = []
         for (int i = 0; i < count; i++) {
-            facts << createObservationFact(leafConceptsCodes[i], patients[i], -300, Math.pow(10, i+1))
+            facts << createObservationFact(leafConceptsCodes[i], patients[i],
+                    -300L, Math.pow(10, i + 1))
         }
         facts
     }

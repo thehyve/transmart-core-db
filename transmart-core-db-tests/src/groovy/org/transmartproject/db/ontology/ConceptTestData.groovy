@@ -20,7 +20,12 @@ class ConceptTestData extends BaseTestData {
         i2b2List << createI2b2Concept(code: 3, level: 1, fullName: '\\foo\\study2\\',         name: 'study2', cComment: 'trial:STUDY2', cVisualattributes: 'FA')
         i2b2List << createI2b2Concept(code: 4, level: 2, fullName: '\\foo\\study2\\study1\\', name: 'study1', cComment: 'trial:STUDY2', cVisualattributes: 'LA')
         // used only in AccessLevelTestData
-        i2b2List << createI2b2Concept(code: 5, level: 1, fullName: '\\foo\\study3\\',         name: 'study3', cComment: 'trial:STUDY3', cVisualAttributes: 'FA')
+        i2b2List << createI2b2Concept(code: 5, level: 1, fullName: '\\foo\\study3\\',         name: 'study3', cComment: 'trial:STUDY3', cVisualattributes: 'FA')
+        // useful to test rest-api
+        i2b2List << createI2b2Concept(code: 6, level: 2, fullName: '\\foo\\study2\\long path\\',
+                                      name: 'long path', cComment: 'trial:STUDY2', cVisualattributes: 'FA')
+        i2b2List << createI2b2Concept(code: 7, level: 3, fullName: '\\foo\\study2\\long path\\with%some$characters_\\',
+                                      name: 'with%some$characters_', cComment: 'trial:STUDY2', cVisualattributes: 'LA')
 
         def conceptDimensions = createConceptDimensions(i2b2List)
 
@@ -154,5 +159,41 @@ class ConceptTestData extends BaseTestData {
             throw new IllegalArgumentException("Some I2b2 instances miss fields required for ontology queries: $missing")
         }
     }
+
+    /**
+     * Adds a leaf concept to this data, along with its folder and root concepts.
+     *
+     * @param root name of the root concept to be created
+     * @param study name of the folder concept to be created
+     * @param concept name of the concep to be created
+     * @param code concept code
+     * @return new concept
+     */
+    I2b2 addLeafConcept(String root = 'base',
+                        String study = 'folder',
+                        String concept = 'leaf',
+                        String code = 'mycode') {
+
+        initListsIfNull()
+
+        tableAccesses << createTableAccess(fullName: "\\$root\\", name: root, tableCode: 'i2b2 main', tableName: 'i2b2')
+        i2b2List << createI2b2Concept(level: 1, fullName: "\\$root\\$study\\", name: study,
+                code: study, cVisualattributes: 'FA')
+        I2b2 result = createI2b2Concept(level: 2, fullName: "\\$root\\$study\\$concept\\", name: concept,
+                code: code,  cVisualattributes: 'LA')
+
+        i2b2List << result
+
+        conceptDimensions.addAll(createConceptDimensions([result]))
+
+        result
+    }
+
+    private void initListsIfNull() {
+        this.tableAccesses = this.tableAccesses ?: []
+        this.i2b2List = this.i2b2List ?: []
+        this.conceptDimensions = this.conceptDimensions ?: []
+    }
+
 
 }
