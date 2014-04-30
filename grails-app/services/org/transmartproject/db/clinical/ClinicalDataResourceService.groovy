@@ -12,6 +12,8 @@ import org.transmartproject.db.dataquery.clinical.ClinicalDataTabularResult
 import org.transmartproject.db.dataquery.clinical.TerminalConceptVariablesDataQuery
 import org.transmartproject.db.dataquery.clinical.variables.ClinicalVariableFactory
 import org.transmartproject.db.dataquery.clinical.variables.TerminalConceptVariable
+import org.transmartproject.db.i2b2data.ObservationFact
+import org.transmartproject.db.querytool.QtPatientSetCollection
 
 class ClinicalDataResourceService implements ClinicalDataResource {
 
@@ -69,6 +71,33 @@ class ClinicalDataResourceService implements ClinicalDataResource {
             session.close()
             throw t
         }
+    }
+                                                                   
+   /**
+    * Returns the number of patients from the patient set for which the system has clinical data.
+    * @param patientSet    The patientset to query.
+    * @return The number of patients from the patient set for which the system has clinical data.
+    */
+    @Override
+    int getPatientCountWithClinicalData(QueryResult patientSet) {
+        // Determine the patients to query. This has a few where clauses:
+        //      - match the selected subset
+        //      - sourceSystemCd should not contain :S:
+        def patientNums = QtPatientSetCollection.executeQuery( "SELECT q.patient.id FROM QtPatientSetCollection q WHERE q.resultInstance.id = ? AND q.patient.sourcesystemCd NOT LIKE '%:S:%'", patientSet.getId() )
+        
+        if( !patientNums )
+            return 0
+        
+        // Find all low dimensional observations
+        def rows = ObservationFact.createCriteria().list {
+            projections {
+                groupProperty("patient")
+                countDistinct("patient")
+            }
+            'in'( 'patient.id', patientNums )
+        }
+        
+        rows.size()
     }
 
     private void flattenClinicalVariables(List<TerminalConceptVariable> target,
