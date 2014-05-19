@@ -9,6 +9,7 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.transmartproject.core.exceptions.InvalidRequestException
 import org.transmartproject.core.querytool.ConstraintByValue
+import org.transmartproject.core.querytool.ConstraintByVcf
 import org.transmartproject.core.querytool.Item
 import org.transmartproject.core.querytool.Panel
 import org.transmartproject.core.querytool.QueryDefinition
@@ -22,6 +23,8 @@ import static org.hamcrest.Matchers.*
 import static org.transmartproject.core.querytool.ConstraintByValue.Operator.*
 import static org.transmartproject.core.querytool.ConstraintByValue.ValueType.FLAG
 import static org.transmartproject.core.querytool.ConstraintByValue.ValueType.NUMBER
+import static org.transmartproject.core.querytool.ConstraintByVcf.Value.MUTATED
+import static org.transmartproject.core.querytool.ConstraintByVcf.Type.STATUS
 import static org.transmartproject.db.support.DatabasePortabilityService.DatabaseType.POSTGRESQL
 
 @TestMixin(GrailsUnitTestMixin)
@@ -70,7 +73,8 @@ class PatientSetQueryBuilderServiceTests {
                         invert: false,
                         items:  [
                                 new Item(
-                                        conceptKey: conceptKey
+                                        conceptKey: conceptKey,
+                                        type: "test"
                                 )
                         ]
                 )
@@ -239,6 +243,56 @@ class PatientSetQueryBuilderServiceTests {
         def sql = service.buildPatientSetQuery(resultInstance, definition)
 
         assertThat sql, containsString("AND (valueflag_cd = 'N')")
+    }
+
+    @Test
+    void testVcfSimpleStatusConstraint() {
+        def definition = new QueryDefinition([
+                new Panel(
+                        items:  [
+                                new Item(
+                                        conceptKey: '\\\\code\\full\\name\\',
+                                        constraint: new ConstraintByVcf(
+                                                position: "1:65529",
+                                                type: STATUS,
+                                                value: MUTATED
+                                        )
+                                )
+                        ]
+                )
+        ])
+
+        def sql = service.buildPatientSetQuery(resultInstance, definition)
+
+        assertThat sql, containsString("subject_id IN (" +
+                "SELECT subject_id " +
+                "FROM deapp.de_variant_subject_summary "+
+                "WHERE chr = 1 AND pos = 65529 AND (allele1 = 1 OR allele2 = 1))")
+    }
+
+    @Test
+    void basicVcfTest() {
+        def conceptKey = '\\\\code\\full\\name\\'
+        def definition = new QueryDefinition([
+                new Panel(
+                        invert: false,
+                        items:  [
+                                new Item(
+                                        conceptKey: conceptKey
+                                )
+                        ]
+                )
+        ])
+        def sql = service.buildPatientSetQuery(resultInstance, definition)
+
+        assertThat sql, allOf(
+                startsWith('INSERT INTO qt_patient_set_collection'),
+                containsString('SELECT patient_num FROM ' +
+                        'observation_fact'),
+                containsString('concept_cd IN (SELECT concept_cd FROM ' +
+                        'concept_dimension WHERE concept_path LIKE ' +
+                        '\'\\\\full\\\\name\\\\%\')')
+        );
     }
 
 

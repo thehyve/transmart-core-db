@@ -37,6 +37,21 @@ class QueryDefinitionXmlService implements QueryDefinitionXmlConverter {
                             'Invalid XML query definition constraint', err)
                 }
             }
+            if (item.constrain_by_vcf.size()) {
+                try {
+                    def constrain = item.constrain_by_vcf
+                    data.constraint = new ConstraintByVcf(
+                            position: constrain.position.toString(),
+                            type: ConstraintByVcf.Type.valueOf(
+                                    constrain.type.toString()),
+                            value: ConstraintByVcf.Value.valueOf(
+                                    constrain.value.toString())
+                    )
+                } catch (err) {
+                    throw new InvalidRequestException(
+                            'Invalid XML query definition constraint', err)
+                }
+            }
 
             new Item(data)
         }
@@ -81,6 +96,7 @@ class QueryDefinitionXmlService implements QueryDefinitionXmlConverter {
                             item_key itemArg.conceptKey
 
                             if (itemArg.constraint) {
+                                if(itemArg.constraint instanceof ConstraintByValue)
                                 constrain_by_value {
                                     value_operator itemArg.constraint.operator.value
                                     value_constraint itemArg.constraint.constraint
