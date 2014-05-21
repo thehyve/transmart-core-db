@@ -17,7 +17,8 @@ class DeVariantSubjectDetailCoreDb implements Serializable {
     String variant
 
     static belongsTo = [dataset: DeVariantDatasetCoreDb] //TODO: implement constraint on dataset
-
+    static hasMany = [infoFields: DeVariantPopulationData]
+    
     static constraints = {
         alt     nullable: true
         quality nullable: true
@@ -31,7 +32,7 @@ class DeVariantSubjectDetailCoreDb implements Serializable {
         table     schema:  'deapp', name: 'de_variant_subject_detail'
         version   false
 
-        id composite: ['chr', 'pos']
+        id composite: ['dataset', 'chr', 'pos']
 
         dataset column: 'dataset_id'
         rsId    column: 'rs_id'

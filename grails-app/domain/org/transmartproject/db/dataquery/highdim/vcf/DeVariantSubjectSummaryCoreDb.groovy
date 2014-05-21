@@ -39,6 +39,7 @@ class DeVariantSubjectSummaryCoreDb {
         // see https://forum.hibernate.org/viewtopic.php?f=1&t=1012372
         columns {
             jDetail {
+                column name: 'dataset'
                 column name: 'chr'
                 column name: 'pos'
             }

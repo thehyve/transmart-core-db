@@ -25,7 +25,10 @@ class VcfTestData  {
     List<DeVariantSubjectSummaryCoreDb> summariesData
     List<DeVariantSubjectDetailCoreDb> detailsData
     List<DeVariantSubjectIdxCoreDb> indexData
-    
+
+    List<DeVariantPopulationInfo> infoFields
+    List<DeVariantPopulationData> infoFieldContents
+        
     public VcfTestData() {
         // Create VCF platform and assays
         platform = new DeGplInfo(
@@ -37,6 +40,12 @@ class VcfTestData  {
         dataset.id = 'BOGUSDTST'
         patients = HighDimTestData.createTestPatients(3, -800, TRIAL_NAME)
         assays = HighDimTestData.createTestAssays(patients, -1400, platform, TRIAL_NAME)
+        
+        // Setup 3 info fields
+        infoFields = []
+        infoFields << new DeVariantPopulationInfo( dataset: dataset, name: "NS", type: "Flag", number: "0", description: "Number of samples with data" )
+        infoFields << new DeVariantPopulationInfo( dataset: dataset, name: "AF", type: "Integer", number: "A", description: "Allele frequency" )
+        infoFields << new DeVariantPopulationInfo( dataset: dataset, name: "ID", type: "String", number: "1", description: "Identifier of this line; for testing purposes only" )
         
         // Create VCF data
         detailsData = []
@@ -64,6 +73,11 @@ class VcfTestData  {
                 subjectId: assay.sampleCode,
                 position: idx + 1
             )
+        }
+        
+        infoFieldContents = []
+        detailsData.each { detail ->
+            infoFieldContents += createPopulationData( detail )
         }
         
         // Add also another platform and assays for those patients
@@ -121,8 +135,47 @@ class VcfTestData  {
                     jDetail: detail
             )
     }
+    
+    def createPopulationData( def detail ) {
+        def data = []
+        infoFields.each { infoField ->
+            def numValues = 1;
+            if( infoField.number == 'A' )
+                numValues = 1 + detail.alt.split( "," ).size()
+           
+            def intValue = null
+            def floatValue = null
+            def textValue = null
+            
+            (1..numValues).each { idx ->
+                switch( infoField.type ) {
+                    case 'String':
+                        textValue = infoField.name + "-" + detail.pos + "-" + idx
+                        break;
+                    case 'Integer':
+                        intValue = detail.pos * idx
+                        break
+                }
 
+                data << new DeVariantPopulationData(
+                    dataset: dataset,
+                    infoField: infoField,
+                    subjectDetail: detail,
 
+                    name: infoField.name,
+                    chr: detail.chr,
+                    pos: detail.pos,
+                    index: idx - 1,
+                    
+                    intValue: intValue,
+                    floatValue: floatValue,
+                    textValue: textValue,
+                )
+            }
+        }
+        
+        data
+    }
 
 
     void saveAll() {
@@ -134,5 +187,7 @@ class VcfTestData  {
         save detailsData
         save summariesData
         save indexData
+        save infoFields
+        save infoFieldContents
     }
 }

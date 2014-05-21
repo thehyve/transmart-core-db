@@ -10,7 +10,7 @@ class DeVariantDatasetCoreDb {
     String metadataComment
     String variantDatasetType
 
-    static hasMany = [summaries: DeVariantSubjectSummaryCoreDb, details: DeVariantSubjectDetailCoreDb]
+    static hasMany = [summaries: DeVariantSubjectSummaryCoreDb, details: DeVariantSubjectDetailCoreDb, infoFields: DeVariantPopulationInfo]
 
     static constraints = {
         datasourceId(nullable: true)
