@@ -25,7 +25,6 @@ class PatientSetQueryBuilderService {
         generalDefinitionValidation(definition)
 
         def panelNum = 1
-        def constraintType = "VALUE"
         def panelClauses = definition.panels.collect { Panel panel ->
 
             def itemPredicates = panel.items.collect { Item it ->
@@ -37,13 +36,21 @@ class PatientSetQueryBuilderService {
                             "$it.conceptKey", nsr)
                 }
 
-                if(it.constraint instanceof ConstraintByValue) {
-                    constraintType = "VALUE"
-                } else if(it.constraint instanceof ConstraintByVcf) {
-                    constraintType = "VCF"
+                String clause = doItem(term, it.constraint)
+                String selectQuery
+                if(it.type == "CLINICAL") {
+                    selectQuery = "SELECT patient_num as patient_identifier " +
+                            "FROM observation_fact WHERE $clause AND concept_cd != 'SECURITY' GROUP BY patient_identifier"
+                } else if (it.type == "VCF") {
+                    if(it.constraint ==  null) {
+                        selectQuery = "SELECT patient_id as patient_identifier " +
+                                "FROM deapp.de_subject_sample_mapping WHERE platform = 'VCF'"
+                    } else {
+                        selectQuery = "SELECT patient_id as patient_identifier " +
+                            "FROM deapp.de_subject_sample_mapping WHERE $clause GROUP BY patient_identifier"
+                    }
                 }
-
-                doItem(term, it.constraint)
+                selectQuery
             }
             /*
              * itemPredicates are similar to this example:
@@ -57,27 +64,17 @@ class PatientSetQueryBuilderService {
              *      (valtype_cd = 'N' AND nval_num >= 50 AND tval_char = 'G')
              * )
              */
-            def bigPredicate = itemPredicates.collect { "($it)" }.join(' OR ')
+            def bigPredicate = itemPredicates.collect { "($it)" }.join(' UNION ')
 
             if (panel.items.size() > 1) {
-                bigPredicate = "($bigPredicate)"
+                bigPredicate = "$bigPredicate"
             }
 
-            if(constraintType == "VALUE") {
-                [
-                        id: panelNum++,
-                        select: "SELECT patient_num " +
-                                "FROM observation_fact WHERE $bigPredicate AND concept_cd != 'SECURITY'",
-                        invert: panel.invert,
-                ]
-            } else if (constraintType == "VCF") {
-                [
-                        id: panelNum++,
-                        select: "SELECT patient_id " +
-                                "FROM deapp.de_subject_sample_mapping WHERE $bigPredicate",
-                        invert: panel.invert,
-                ]
-            }
+            [
+                id: panelNum++,
+                select: bigPredicate,
+                invert: panel.invert,
+            ]
         }.sort { a, b ->
             (a.invert && !b.invert) ? 1
                     : (!a.invert && b.invert) ? -1
@@ -87,21 +84,11 @@ class PatientSetQueryBuilderService {
         def patientSubQuery
         if (panelClauses.size() == 1) {
             def panel = panelClauses[0]
-            if(constraintType == "VALUE") {
-                if (!panel.invert) {
-                    /* The intersect/expect is not enough for deleting duplicates
-                     * because there is only one select; we must adda a group by */
-                    patientSubQuery =  "$panel.select GROUP BY patient_num"
-                } else {
-                    patientSubQuery = "SELECT patient_num FROM patient_dimension " +
-                            "EXCEPT ($panel.select)"
-                }
-            } else if(constraintType == "VCF") {
-                if (!panel.invert) {
-                    /* The intersect/expect is not enough for deleting duplicates
-                     * because there is only one select; we must adda a group by */
-                    patientSubQuery =  "$panel.select GROUP BY patient_id"
-                }
+            if (!panel.invert) {
+                patientSubQuery =  panel.select
+            } else {
+                patientSubQuery = "SELECT patient_num as patient_identifier FROM patient_dimension " +
+                        "EXCEPT $panel.select"
             }
         } else {
             patientSubQuery = panelClauses.inject("") { String acc, panel ->
@@ -111,7 +98,7 @@ class PatientSetQueryBuilderService {
                                 : panel.invert
                                 ? " $databasePortabilityService.complementOperator "
                                 : ' INTERSECT ') +
-                        "($panel.select)"
+                        "$panel.select"
             }
         }
     }
@@ -126,14 +113,6 @@ class PatientSetQueryBuilderService {
 
         def patientSubQuery = buildPatientIdListQuery(definition)
 
-        def anyItem = { Closure c ->
-            definition.panels.any { Panel p ->
-                p.items.any { Item item ->
-                    c(item)
-                }
-            }
-        }
-
         //$patientSubQuery has result set with single column: 'patient_num'
         def windowFunctionOrderBy = ''
         if (databasePortabilityService.databaseType == ORACLE) {
@@ -142,16 +121,10 @@ class PatientSetQueryBuilderService {
         }
 
         def sql = "INSERT INTO qt_patient_set_collection (result_instance_id," +
-                  " patient_num, set_index) "
-
-        if(!anyItem {Item it -> it.constraint instanceof ConstraintByVcf}) {
-            sql += "SELECT ${resultInstance.id}, P.patient_num, "
-        } else {
-            sql += "SELECT ${resultInstance.id}, P.patient_id, "
-        }
-
-        sql += " row_number() OVER ($windowFunctionOrderBy) " +
-               "FROM ($patientSubQuery ORDER BY 1) P"
+                " patient_num, set_index) " +
+                "SELECT ${resultInstance.id}, P.patient_identifier, " +
+                " row_number() OVER ($windowFunctionOrderBy) " +
+                "FROM ($patientSubQuery ORDER BY 1) P"
 
         log.debug "SQL statement: $sql"
 
@@ -213,21 +186,38 @@ class PatientSetQueryBuilderService {
 
     private String createVCFConstraintQuery(ConstraintByVcf constraint) {
         def clause = ""
-        def chromosome = constraint.position.split(/:/)[0]
-        def position = constraint.position.split(/:/)[1]
+        def (chromosome,position) = constraint.location.tokenize(':')
+        def position2
+        if(position.contains('-'))
+            (position,position2) = position.tokenize('-')
+
         //(chromosome,position) = getVcfPosition(constraint)
         if (constraint.type == ConstraintByVcf.Type.STATUS) {
             clause += "subject_id IN ("+
             "SELECT subject_id "+
-            "FROM deapp.de_variant_subject_summary "+
-            "WHERE chr = " + chromosome + " AND pos = " + position + " AND (allele1 = 1 OR allele2 = 1))"
+            "FROM deapp.de_variant_subject_summary " +
+            "WHERE chr = '" + chromosome
+
+            if(position2 == null) {
+                clause += "' AND pos = " + position
+            } else {
+                clause += "' AND pos >= " + position + " AND pos <= " + position2
+            }
+
+            if(constraint.value == ConstraintByVcf.Value.WILDTYPE) {
+                clause += " AND allele1 = 0 AND allele2 = 0)"
+            } else if(constraint.value == ConstraintByVcf.Value.HETEROZYGOUS) {
+                clause += " AND ((allele1 = 0 AND allele2 != 0) OR (allele1 != 0 AND allele2 = 0)))"
+            } else if(constraint.value == ConstraintByVcf.Value.HOMOZYGOUS) {
+                clause += " AND allele1 != 0 AND allele2 != 0)"
+            }
         }
         return clause
     }
 
     private String getVcfPosition(ConstraintByVcf constraint) {
-        String chromosome = constraint.position.split(/:/)[0]
-        String position = constraint.position.split(/:/)[1]
+        //String chromosome = constraint.position.split(/:/)[0]
+        //String position = constraint.position.split(/:/)[1]
         [chromosome,position]
     }
 

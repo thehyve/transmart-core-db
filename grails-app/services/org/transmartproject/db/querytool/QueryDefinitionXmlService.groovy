@@ -22,6 +22,7 @@ class QueryDefinitionXmlService implements QueryDefinitionXmlConverter {
 
         def convertItem = { item ->
             def data = [ conceptKey: item.item_key ]
+            data.type = "CLINICAL"
             if (item.constrain_by_value.size()) {
                 try {
                     def constrain = item.constrain_by_value
@@ -41,12 +42,13 @@ class QueryDefinitionXmlService implements QueryDefinitionXmlConverter {
                 try {
                     def constrain = item.constrain_by_vcf
                     data.constraint = new ConstraintByVcf(
-                            position: constrain.position.toString(),
+                            location: constrain.position.toString(),
                             type: ConstraintByVcf.Type.valueOf(
                                     constrain.type.toString()),
                             value: ConstraintByVcf.Value.valueOf(
                                     constrain.value.toString())
                     )
+                    data.type = "VCF"
                 } catch (err) {
                     throw new InvalidRequestException(
                             'Invalid XML query definition constraint', err)

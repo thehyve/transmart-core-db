@@ -23,7 +23,7 @@ import static org.hamcrest.Matchers.*
 import static org.transmartproject.core.querytool.ConstraintByValue.Operator.*
 import static org.transmartproject.core.querytool.ConstraintByValue.ValueType.FLAG
 import static org.transmartproject.core.querytool.ConstraintByValue.ValueType.NUMBER
-import static org.transmartproject.core.querytool.ConstraintByVcf.Value.MUTATED
+import static org.transmartproject.core.querytool.ConstraintByVcf.Value.WILDTYPE
 import static org.transmartproject.core.querytool.ConstraintByVcf.Type.STATUS
 import static org.transmartproject.db.support.DatabasePortabilityService.DatabaseType.POSTGRESQL
 
@@ -74,7 +74,7 @@ class PatientSetQueryBuilderServiceTests {
                         items:  [
                                 new Item(
                                         conceptKey: conceptKey,
-                                        type: "test"
+                                        type: "CLINICAL"
                                 )
                         ]
                 )
@@ -83,7 +83,7 @@ class PatientSetQueryBuilderServiceTests {
 
         assertThat sql, allOf(
                 startsWith('INSERT INTO qt_patient_set_collection'),
-                containsString('SELECT patient_num FROM ' +
+                containsString('SELECT patient_num as patient_identifier FROM ' +
                         'observation_fact'),
                 containsString('concept_cd IN (SELECT concept_cd FROM ' +
                         'concept_dimension WHERE concept_path LIKE ' +
@@ -98,17 +98,20 @@ class PatientSetQueryBuilderServiceTests {
                         invert: false,
                         items:  [
                                 new Item(
-                                        conceptKey: '\\\\code\\full\\name1\\'
+                                        conceptKey: '\\\\code\\full\\name1\\',
+                                        type: "CLINICAL"
                                 ),
                                 new Item(
-                                        conceptKey: '\\\\code\\full\\name2\\'
+                                        conceptKey: '\\\\code\\full\\name2\\',
+                                        type: "CLINICAL"
                                 ),
                         ]
                 ),
                 new Panel(
                         items: [
                                 new Item(
-                                        conceptKey: '\\\\code\\full\\name3\\'
+                                        conceptKey: '\\\\code\\full\\name3\\',
+                                        type: "CLINICAL"
                                 )
                         ]
                 )
@@ -117,11 +120,12 @@ class PatientSetQueryBuilderServiceTests {
 
         assertThat sql, allOf(
                 startsWith('INSERT INTO qt_patient_set_collection'),
-                containsString('OR (concept_cd IN (SELECT concept_cd FROM ' +
+                containsString('UNION (SELECT patient_num as patient_identifier'),
+                containsString('WHERE concept_cd IN (SELECT concept_cd FROM ' +
                         'concept_dimension WHERE concept_path LIKE ' +
                         '\'\\\\full\\\\name2\\\\%\')'),
-                containsString('INTERSECT (SELECT patient_num FROM ' +
-                        'observation_fact WHERE (concept_cd IN (SELECT ' +
+                containsString('INTERSECT (SELECT patient_num as patient_identifier FROM ' +
+                        'observation_fact WHERE concept_cd IN (SELECT ' +
                         'concept_cd FROM concept_dimension WHERE concept_path ' +
                         'LIKE \'\\\\full\\\\name3\\\\%\''),
         );
@@ -134,19 +138,19 @@ class PatientSetQueryBuilderServiceTests {
                         invert: true,
                         items:  [
                                 new Item(
-                                        conceptKey: '\\\\code\\full\\name\\'
+                                        conceptKey: '\\\\code\\full\\name\\',
+                                        type: "CLINICAL"
                                 )
                         ]
                 )
         ])
         def sql = service.buildPatientSetQuery(resultInstance, definition)
-
-        assertThat sql, containsString('SELECT patient_num FROM ' +
-                'patient_dimension EXCEPT (SELECT patient_num FROM ' +
-                'observation_fact WHERE (concept_cd IN (SELECT concept_cd ' +
+        assertThat sql, containsString('SELECT patient_num as patient_identifier FROM ' +
+                'patient_dimension EXCEPT (SELECT patient_num as patient_identifier FROM ' +
+                'observation_fact WHERE concept_cd IN (SELECT concept_cd ' +
                 'FROM concept_dimension WHERE concept_path ' +
-                'LIKE \'\\\\full\\\\name\\\\%\')) ' +
-                'AND concept_cd != \'SECURITY\') ORDER BY 1')
+                'LIKE \'\\\\full\\\\name\\\\%\') ' +
+                'AND concept_cd != \'SECURITY\' GROUP BY patient_identifier) ORDER BY 1')
     }
 
     @Test
@@ -156,24 +160,26 @@ class PatientSetQueryBuilderServiceTests {
                         invert: true,
                         items:  [
                                 new Item(
-                                        conceptKey: '\\\\code\\b\\'
+                                        conceptKey: '\\\\code\\b\\',
+                                        type: "CLINICAL"
                                 )
                         ]
                 ),
                 new Panel(
                         items:  [
                                 new Item(
-                                        conceptKey: '\\\\code\\a\\'
+                                        conceptKey: '\\\\code\\a\\',
+                                        type: "CLINICAL"
                                 )
                         ]
                 )
         ])
 
         def sql = service.buildPatientSetQuery(resultInstance, definition)
-        assertThat sql, containsString('EXCEPT (SELECT patient_num ' +
-                'FROM observation_fact WHERE (concept_cd IN (SELECT ' +
+        assertThat sql, containsString('EXCEPT (SELECT patient_num as patient_identifier ' +
+                'FROM observation_fact WHERE concept_cd IN (SELECT ' +
                 'concept_cd FROM concept_dimension WHERE concept_path ' +
-                'LIKE \'\\\\b\\\\%\')) AND concept_cd != \'SECURITY\')')
+                'LIKE \'\\\\b\\\\%\') AND concept_cd != \'SECURITY\' GROUP BY patient_identifier)')
     }
 
     @Test
@@ -187,7 +193,8 @@ class PatientSetQueryBuilderServiceTests {
                                                 operator: LOWER_THAN,
                                                 valueType: NUMBER,
                                                 constraint: '5.6'
-                                        )
+                                        ),
+                                        type: "CLINICAL"
                                 )
                         ]
                 )
@@ -211,7 +218,8 @@ class PatientSetQueryBuilderServiceTests {
                                                 operator: BETWEEN,
                                                 valueType: NUMBER,
                                                 constraint: '5.6 and 5.8'
-                                        )
+                                        ),
+                                        type: "CLINICAL"
                                 )
                         ]
                 )
@@ -220,7 +228,7 @@ class PatientSetQueryBuilderServiceTests {
         def sql = service.buildPatientSetQuery(resultInstance, definition)
 
         assertThat sql, containsString("AND ((valtype_cd = 'N' AND " +
-                "nval_num BETWEEN 5.6 AND 5.8 AND tval_char = 'E')))")
+                "nval_num BETWEEN 5.6 AND 5.8 AND tval_char = 'E'))")
     }
 
     @Test
@@ -234,7 +242,8 @@ class PatientSetQueryBuilderServiceTests {
                                                 operator: EQUAL_TO,
                                                 valueType: FLAG,
                                                 constraint: 'N'
-                                        )
+                                        ),
+                                        type: "CLINICAL"
                                 )
                         ]
                 )
@@ -246,17 +255,41 @@ class PatientSetQueryBuilderServiceTests {
     }
 
     @Test
-    void testVcfSimpleStatusConstraint() {
+    void basicVcfTest() {
+        def conceptKey = '\\\\code\\full\\name\\'
+        def definition = new QueryDefinition([
+                new Panel(
+                        invert: false,
+                        items:  [
+                                new Item(
+                                        conceptKey: conceptKey,
+                                        type: "VCF"
+                                )
+                        ]
+                )
+        ])
+        def sql = service.buildPatientSetQuery(resultInstance, definition)
+
+        assertThat sql, allOf(
+                startsWith('INSERT INTO qt_patient_set_collection'),
+                containsString('SELECT patient_id as patient_identifier ' +
+                        'FROM deapp.de_subject_sample_mapping WHERE platform = \'VCF\'')
+        );
+    }
+
+    @Test
+    void testVcfWildtypeConstraint() {
         def definition = new QueryDefinition([
                 new Panel(
                         items:  [
                                 new Item(
                                         conceptKey: '\\\\code\\full\\name\\',
                                         constraint: new ConstraintByVcf(
-                                                position: "1:65529",
+                                                location: "1:65529",
                                                 type: STATUS,
-                                                value: MUTATED
-                                        )
+                                                value: WILDTYPE
+                                        ),
+                                        type: "VCF"
                                 )
                         ]
                 )
@@ -267,34 +300,8 @@ class PatientSetQueryBuilderServiceTests {
         assertThat sql, containsString("subject_id IN (" +
                 "SELECT subject_id " +
                 "FROM deapp.de_variant_subject_summary "+
-                "WHERE chr = 1 AND pos = 65529 AND (allele1 = 1 OR allele2 = 1))")
+                "WHERE chr = '1' AND pos = 65529 AND allele1 = 0 AND allele2 = 0)")
     }
-
-    @Test
-    void basicVcfTest() {
-        def conceptKey = '\\\\code\\full\\name\\'
-        def definition = new QueryDefinition([
-                new Panel(
-                        invert: false,
-                        items:  [
-                                new Item(
-                                        conceptKey: conceptKey
-                                )
-                        ]
-                )
-        ])
-        def sql = service.buildPatientSetQuery(resultInstance, definition)
-
-        assertThat sql, allOf(
-                startsWith('INSERT INTO qt_patient_set_collection'),
-                containsString('SELECT patient_num FROM ' +
-                        'observation_fact'),
-                containsString('concept_cd IN (SELECT concept_cd FROM ' +
-                        'concept_dimension WHERE concept_path LIKE ' +
-                        '\'\\\\full\\\\name\\\\%\')')
-        );
-    }
-
 
     // The rest are error tests
 
@@ -425,7 +432,8 @@ class PatientSetQueryBuilderServiceTests {
                                         operator: EQUAL_TO,
                                         valueType: FLAG,
                                         constraint: 'FOO'
-                                )
+                                ),
+                                type: "CLINICAL"
                         )
                 ])
         ])
@@ -447,7 +455,8 @@ class PatientSetQueryBuilderServiceTests {
                                         operator: EQUAL_TO,
                                         valueType: NUMBER,
                                         constraint: 'FOO'
-                                )
+                                ),
+                                type: "CLINICAL"
                         )
                 ])
         ])
@@ -469,7 +478,8 @@ class PatientSetQueryBuilderServiceTests {
                                         operator: BETWEEN,
                                         valueType: NUMBER,
                                         constraint: '5.6'
-                                )
+                                ),
+                                type: "CLINICAL"
                         )
                 ])
         ])
