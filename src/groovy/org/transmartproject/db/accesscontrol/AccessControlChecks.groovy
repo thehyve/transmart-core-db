@@ -113,11 +113,20 @@ class AccessControlChecks {
 
                 /* this could be optimized by adding a new method in
                  * StudiesResource */
-                studiesResource.getStudyByOntologyTerm(
-                        conceptsResource.getByKey(item.conceptKey))
+                def concept = conceptsResource.getByKey(item.conceptKey)
+                def study = concept.study
+
+                if (study == null) {
+                    log.info "User included concept with no study: $concept"
+                }
+
+                study
             } as Set
 
             foundStudies.every { Study study1 ->
+                if (study1 == null) {
+                    return false
+                }
                 canPerform user, operation, study1
             }
         }
@@ -164,7 +173,8 @@ class AccessControlChecks {
 
         if (!res) {
             log.warn "Denying $user access to query result $result because " +
-                    "its creator doesn't match the user"
+                    "its creator (${result.username}) doesn't match the user " +
+                    "(${user.username})"
         } else {
             log.debug "Granting $user access to $result (usernames match)"
         }
