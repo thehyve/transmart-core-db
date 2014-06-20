@@ -79,6 +79,7 @@ class ProteinModule extends AbstractHighDimensionDataTypeModule {
 
                 property 'a.id',          'annotationId'
                 property 'a.uniprotName', 'uniprotName'
+                property 'a.uniprotId',   'uniprotId'
                 property 'a.peptide',     'peptide'
             }
 
@@ -108,6 +109,7 @@ class ProteinModule extends AbstractHighDimensionDataTypeModule {
                     new ProteinDataRow(
                             peptide:       firstNonNullCell[0].peptide,
                             uniprotName:   firstNonNullCell[0].uniprotName,
+                            uniprotId:     firstNonNullCell[0].uniprotId,
                             assayIndexMap: assayIndexes,
                             data:          list.collect { projection.doWithResult it?.getAt(0) }
                     )

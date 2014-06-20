@@ -6,7 +6,7 @@ import org.transmartproject.db.dataquery.highdim.AbstractDataRow
 class ProteinDataRow extends AbstractDataRow implements BioMarkerDataRow<Object> {
 
     String uniprotName
-
+    String uniprotId
     String peptide
 
     @Override
