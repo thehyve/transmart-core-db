@@ -247,7 +247,7 @@ class ClinicalDataRetrievalTests {
                         hasSameInterfaceProperties(Patient,
                                 testData.i2b2Data.patients[2] /* -103 */, ['assays'])),
                 /* numberValue prop in ObservationFact has scale 5 */
-                contains(equalTo(-45.42000 /* big decimal */))))
+                contains(closeTo(-45.42000, 0.0001))))
     }
 
 
@@ -309,7 +309,7 @@ class ClinicalDataRetrievalTests {
 
 
     @Test
-    void testRepeatedDataPoint() {
+    void testRepeatedTextDataPoint() {
         ClinicalTestData.createObservationFact(
                 testData.conceptData.conceptDimensions.find { it.conceptCode == 'c2' },
                 testData.i2b2Data.patients[1],
@@ -320,13 +320,29 @@ class ClinicalDataRetrievalTests {
         def exception = shouldFail UnexpectedResultException, {
             results = clinicalDataResourceService.retrieveData(
                     testData.clinicalData.queryResult,
-                    [ new TerminalConceptVariable(conceptCode: 'c2') ])
+                    [new TerminalConceptVariable(conceptCode: 'c2')])
             def res = Lists.newArrayList results /* consume the data */
-            println res
         }
 
         assertThat exception, hasProperty('message',
                 containsString('Got more than one fact'))
+    }
+
+    @Test
+    void testAvgFromRepeatedNumberDataPoint() {
+        ClinicalTestData.createObservationFact(
+                testData.conceptData.conceptDimensions.find { it.conceptCode == 'c3' },
+                testData.i2b2Data.patients[2],
+                -20000,
+                -100
+        ).save(failOnError: true)
+        sessionFactory.currentSession.flush()
+
+        results = clinicalDataResourceService.retrieveData(
+                testData.clinicalData.queryResult,
+                [new TerminalConceptVariable(conceptCode: 'c3')])
+        def res = Lists.newArrayList results
+        assertThat res, hasItem(contains(closeTo(-72.71, 0.0001)))
     }
 
 

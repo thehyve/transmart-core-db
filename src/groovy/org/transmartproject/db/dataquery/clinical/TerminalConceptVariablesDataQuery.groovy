@@ -54,22 +54,23 @@ class TerminalConceptVariablesDataQuery {
         }
 
         // see TerminalConceptVariable constants
-        // see ObservationFact
-        Query query = session.createQuery '''
-                SELECT
-                    patient.id,
-                    conceptCode,
-                    valueType,
-                    textValue,
-                    numberValue
-                FROM ObservationFact fact
-                WHERE
-                    patient.id IN (:patientIds)
-                AND
-                    fact.conceptCode IN (:conceptCodes)
-                ORDER BY
-                    patient ASC,
-                    conceptCode ASC'''
+        // NOTE: In transmart each text concept unlike number one associated just with one value
+        Query query = session.createSQLQuery '''
+            SELECT *
+            FROM
+                (SELECT patient_num, concept_cd, 'N' AS valtype_cd, 'E' AS tval_char, avg(nval_num) AS nval_num
+                 FROM i2b2demodata.observation_fact
+                 WHERE valtype_cd = 'N'
+                    AND patient_num in (:patientIds)
+                    AND concept_cd in (:conceptCodes)
+                 GROUP BY patient_num, concept_cd
+                 UNION ALL
+                 SELECT distinct patient_num, concept_cd, 'T' AS valtype_cd, tval_char, NULL AS nval_num
+                 FROM i2b2demodata.observation_fact
+                 WHERE valtype_cd != 'N'
+                    AND patient_num in (:patientIds)
+                    AND concept_cd in (:conceptCodes)) AS RESULT
+            ORDER BY patient_num ASC, concept_cd ASC'''
 
         query.cacheable = false
         query.readOnly  = true
