@@ -25,6 +25,8 @@ import org.transmartproject.core.users.UsersResource
 
 class UsersResourceService implements UsersResource {
 
+    static transactional = false
+
     @Override
     org.transmartproject.core.users.User getUserFromUsername(String username)
             throws NoSuchResourceException {
