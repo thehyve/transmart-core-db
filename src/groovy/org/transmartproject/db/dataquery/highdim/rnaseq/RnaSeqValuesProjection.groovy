@@ -41,14 +41,20 @@ class RnaSeqValuesProjection implements CriteriaProjection<RnaSeqValues>, MultiV
     }
 
     class RnaSeqValuesImpl implements RnaSeqValues {
-        final List rowList
+        final Map rowMap
 
-        RnaSeqValuesImpl(final List rowList) {
-            this.rowList = rowList
+        RnaSeqValuesImpl(final Map rowMap) {
+            this.rowMap = rowMap
         }
 
-        Long getAssayId() { rowList[0] as Long }
+        Long getAssayId() { rowMap["assayId"] as Long }
 
-        Integer getReadCount() { rowList[1] as Integer }
+        Integer getReadCount() { rowMap["readCount"] as Integer }
+
+        Double getNormalizedReadCount() { rowMap["normalizedReadCount"] as Double }
+
+        Double getLogNormalizedReadCount() { rowMap["logNormalizedReadCount"] as Double }
+
+        Double getZscore() { rowMap["zscore"] as Double }
     }
 }

@@ -130,7 +130,18 @@ class VcfDataRow extends AbstractDataRow implements VcfValues, RegionRow {
     Integer getNumberOfProbes() {
         return 1
     }
-    
+
+    @Override
+    String getGeneSymbol() {
+        throw new UnsupportedOperationException('Getter for get geneSymbol is not implemented')
+    }
+
+    @Override
+    Long getGeneId() {
+        throw new UnsupportedOperationException('Getter for get geneId is not implemented')
+    }
+
+
     private Map parseVcfInfo(String info) {
         if (!info) {
             return [:]
