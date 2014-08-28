@@ -20,6 +20,7 @@
 package org.transmartproject.db.dataquery.highdim
 
 import com.google.common.collect.HashMultimap
+import groovy.util.logging.Log4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.transmartproject.core.dataquery.assay.Assay
@@ -33,6 +34,7 @@ import org.transmartproject.db.dataquery.highdim.assayconstraints.AbstractAssayC
 import org.transmartproject.db.dataquery.highdim.parameterproducers.StandardAssayConstraintFactory
 
 @Component
+@Log4j
 class HighDimensionResourceService implements HighDimensionResource {
 
     private static final int MAX_CACHED_DATA_TYPE_RESOURCES = 50
@@ -88,14 +90,19 @@ class HighDimensionResourceService implements HighDimensionResource {
         } /* one row per assay */
 
         HashMultimap multiMap = HashMultimap.create()
+        def unsupportedMarkerTypes = [] as Set
         for (Assay a in assays) {
             String dataTypeName =
                     cachingDataTypeResourceForPlatform.call a.platform
             if (!dataTypeName) {
+                unsupportedMarkerTypes << a.platform?.markerType
                 continue
             }
 
             multiMap.put cachingDataTypeResourceProducer.call(dataTypeName), a
+        }
+        if(unsupportedMarkerTypes) {
+            log.warn("Following marker types are not supported: ${unsupportedMarkerTypes.join(',')}. Corresponding assay entries were skipped!")
         }
 
         multiMap.asMap()
