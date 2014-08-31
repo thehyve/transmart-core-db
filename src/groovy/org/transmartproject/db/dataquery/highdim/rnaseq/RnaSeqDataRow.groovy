@@ -17,55 +17,48 @@
  * transmart-core-db.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.transmartproject.db.dataquery.highdim.chromoregion
+package org.transmartproject.db.dataquery.highdim.rnaseq
 
 import org.transmartproject.core.dataquery.highdim.BioMarkerDataRow
 import org.transmartproject.core.dataquery.highdim.Platform
-import org.transmartproject.core.dataquery.highdim.chromoregion.RegionRow
 import org.transmartproject.db.dataquery.highdim.AbstractDataRow
+import org.transmartproject.core.dataquery.highdim.chromoregion.RegionRow
 
-final class RegionRowImpl extends AbstractDataRow implements RegionRow, BioMarkerDataRow {
+class RnaSeqDataRow extends AbstractDataRow implements RegionRow, BioMarkerDataRow<Object> {
 
-    final List rowList
+    Long    regionId
+    String  name
+    String  cytoband
+    String  chromosome
+    Long    start
+    Long    end
+    Integer numberOfProbes
+    String  geneSymbol
+    Long    geneId
 
-    RegionRowImpl(final List rowList) {
-        this.rowList = rowList
-    }
-
-    Long getId() { rowList[0] as Long }
-
-    String getName() { rowList[1] as String }
-
-    String getCytoband() { rowList[2] as String }
+    Long getId() { regionId }
 
     Platform getPlatform() {
         throw new UnsupportedOperationException('Getter for get platform is not implemented')
     }
 
-    String getChromosome() { rowList[3] as String }
-
-    Long getStart() { rowList[4] as Long }
-
-    Long getEnd() { rowList[5] as Long }
-
-    Integer getNumberOfProbes() { rowList[6] as Integer }
-
-    String getGeneSymbol() { rowList[7] as String }
-
-    Long getGeneId() { rowList[8] as Long }
-
-    @Override
-    String getBioMarker() { rowList[7] as String }
-
     @Override
     String getLabel() {
-        cytoband
+        name
+    }
+
+    @Override
+    String getBioMarker() {
+        geneSymbol
     }
 
     @Override
     public java.lang.String toString() {
-        return "RegionRowImpl{" +
-                "rowList=" + rowList +
+        return "RnaSeqDataRow{" +
+                "regionId=" + regionId +
+                ", data=" + data.toListString() +
+                ", assayIndexMap=" + assayIndexMap.toMapString() +
                 '}';
     }
+
 }

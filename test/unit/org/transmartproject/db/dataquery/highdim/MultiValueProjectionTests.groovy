@@ -66,9 +66,14 @@ class MultiValueProjectionTests {
     @Test
     void testRnaSeqProjectionProperties() {
         //the actual code is smarter than this, so any new property will requite test to be adjusted
-        Map<String, Class> dataProps = [readCount:Integer]
+        Map<String, Class> dataProps = [
+                readCount:Integer,
+                normalizedReadCount:Double,
+                logNormalizedReadCount:Double,
+                zscore:Double]
 
         RnaSeqValuesProjection projection = new RnaSeqValuesProjection()
+
         assertThat projection.dataProperties.entrySet(), equalTo(dataProps.entrySet())
     }
 
