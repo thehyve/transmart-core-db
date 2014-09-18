@@ -65,7 +65,7 @@ class TerminalConceptVariablesDataQuery {
                     AND concept_cd in (:conceptCodes)
                  GROUP BY patient_num, concept_cd
                  UNION ALL
-                 SELECT distinct patient_num, concept_cd, 'T' AS valtype_cd, tval_char, NULL::numeric AS nval_num
+                 SELECT distinct patient_num, concept_cd, 'T' AS valtype_cd, tval_char, CAST(NULL AS numeric) AS nval_num
                  FROM i2b2demodata.observation_fact
                  WHERE valtype_cd != 'N'
                     AND patient_num in (:patientIds)
