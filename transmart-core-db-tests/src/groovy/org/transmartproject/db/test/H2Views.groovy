@@ -63,6 +63,7 @@ class H2Views {
             createI2b2TrialNodes()
             createModifierDimensionView()
             createDeVariantSummaryDetailGene()
+            createAggObsFactsView()
         } finally {
             this.sql.close()
         }
@@ -446,6 +447,25 @@ class H2Views {
                 geneid.chr = summary.chr AND
                 geneid.pos = summary.pos AND
                 geneid.info_name = 'GID' '''
+    }
+
+    void createAggObsFactsView() {
+        if (handleCurrentState('BIOMART_USER', 'AGGREGATED_OBSERVATION_FACTS_VIEW')) {
+            return
+        }
+
+        log.info 'Creating BIOMART_USER.AGGREGATED_OBSERVATION_FACTS_VIEW'
+
+        sql.execute '''
+            CREATE OR REPLACE VIEW BIOMART_USER.AGGREGATED_OBSERVATION_FACTS_VIEW AS
+             SELECT observation_fact.patient_num,
+                observation_fact.concept_cd,
+                observation_fact.valtype_cd,
+                --biomart_user.mode(observation_fact.tval_char) AS tval_char,
+                max(observation_fact.tval_char) AS tval_char,
+                avg(observation_fact.nval_num) AS nval_num
+               FROM observation_fact
+              GROUP BY observation_fact.patient_num, observation_fact.concept_cd, observation_fact.valtype_cd'''
     }
 
     enum ObjectStatus {

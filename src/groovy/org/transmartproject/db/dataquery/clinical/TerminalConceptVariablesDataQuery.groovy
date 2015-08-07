@@ -31,6 +31,7 @@ import org.transmartproject.core.exceptions.InvalidArgumentsException
 import org.transmartproject.db.dataquery.clinical.variables.TerminalConceptVariable
 import org.transmartproject.db.i2b2data.ConceptDimension
 import org.transmartproject.db.i2b2data.ObservationFact
+import org.transmartproject.db.i2b2data.ObservationFactAggEntry
 import org.transmartproject.db.i2b2data.PatientDimension
 
 import static org.transmartproject.db.util.GormWorkarounds.createCriteriaBuilder
@@ -56,7 +57,7 @@ class TerminalConceptVariablesDataQuery {
             throw new IllegalStateException('init() not called successfully yet')
         }
 
-        def criteriaBuilder = createCriteriaBuilder(ObservationFact, 'obs', session)
+        def criteriaBuilder = createCriteriaBuilder(ObservationFactAggEntry, 'obs', session)
         criteriaBuilder.with {
             projections {
                 property 'patient.id'
