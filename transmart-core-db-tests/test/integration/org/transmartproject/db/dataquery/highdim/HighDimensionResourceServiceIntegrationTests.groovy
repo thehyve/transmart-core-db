@@ -23,6 +23,7 @@ import org.junit.Before
 import org.junit.Test
 import org.transmartproject.core.dataquery.assay.Assay
 import org.transmartproject.core.dataquery.highdim.HighDimensionDataTypeResource
+import org.transmartproject.core.dataquery.highdim.HighDimensionResource
 import org.transmartproject.core.dataquery.highdim.Platform
 import org.transmartproject.core.dataquery.highdim.assayconstraints.AssayConstraint
 import org.transmartproject.core.exceptions.InvalidArgumentsException
@@ -41,10 +42,12 @@ import static org.transmartproject.db.test.Matchers.hasSameInterfaceProperties
 
 class HighDimensionResourceServiceIntegrationTests {
 
+    private static final String TEST_DATA_TYPE = 'foobar'
+
     HighDimensionResourceServiceTestData testData =
         new HighDimensionResourceServiceTestData()
 
-    def highDimensionResourceService
+    HighDimensionResourceService highDimensionResourceService
 
     private AssayConstraint getAllPatientsPatientSetConstraint() {
         highDimensionResourceService.createAssayConstraint(
@@ -56,13 +59,17 @@ class HighDimensionResourceServiceIntegrationTests {
     void setUp() {
         testData.saveAll()
 
+        def bogusDataTypeResource = [
+                getDataTypeName: { -> TEST_DATA_TYPE },
+                matchesPlatform: { Platform p ->
+                    p.markerType == 'Foobar' },
+        ] as HighDimensionDataTypeResource
+
         highDimensionResourceService.
-                registerHighDimensionDataTypeModule('foobar') {
-                    [
-                            getDataTypeName: { -> 'foobar' },
-                            matchesPlatform: { Platform p ->
-                                p.markerType == 'Foobar' }
-                    ] as HighDimensionDataTypeResource
+                registerHighDimensionDataTypeModule(TEST_DATA_TYPE) {
+                    // returns always the same instance
+                    // this is not strictly require
+                    bogusDataTypeResource
                 }
     }
 
@@ -81,7 +88,7 @@ class HighDimensionResourceServiceIntegrationTests {
                                 }
                         )),
                 hasEntry(
-                        hasProperty('dataTypeName', is('foobar')),
+                        hasProperty('dataTypeName', is(TEST_DATA_TYPE)),
                         containsInAnyOrder(
                                 testData.foobarAssays.collect {
                                     hasSameInterfaceProperties(Assay, it)
@@ -171,54 +178,59 @@ class HighDimensionResourceServiceIntegrationTests {
         }
     }
 
-    class HighDimensionResourceServiceTestData {
+    @Test
+    void testEqualityOfReturnedHighDimensionDataTypeResources() {
+        def instance1 = highDimensionResourceService.getSubResourceForType('mrna')
+        def instance2 = highDimensionResourceService.getSubResourceForType('mrna')
 
-        static final String MRNA_TRIAL_NAME = 'MRNA_TRIAL_NAME'
+        assertThat instance1, is(equalTo(instance2))
+    }
+}
 
-        static final String TRIAL_NAME = 'HIGH_DIM_RESOURCE_TRIAL'
+class HighDimensionResourceServiceTestData {
 
-        DeGplInfo platformMrna = {
-            def p = new DeGplInfo(
-                    markerType: 'Gene Expression',
-            )
-            p.id = 'mrna-platform'
-            p
-        }()
+    static final String MRNA_TRIAL_NAME = 'MRNA_TRIAL_NAME'
 
-        DeGplInfo platformFoobar = {
-            def p = new DeGplInfo(
-                    markerType: 'Foobar',
-            )
-            p.id = 'foobar-platform'
-            p
-        }()
+    static final String TRIAL_NAME = 'HIGH_DIM_RESOURCE_TRIAL'
 
-        List<PatientDimension> patientsBoth = createTestPatients(2, -2000, TRIAL_NAME)
-        List<PatientDimension> patientsFoobar = createTestPatients(3, -3000, TRIAL_NAME)
+    DeGplInfo platformMrna = {
+        def p = new DeGplInfo(
+                markerType: 'Gene Expression',
+        )
+        p.id = 'mrna-platform'
+        p
+    }()
 
-        List<DeSubjectSampleMapping> mrnaAssays =
+    DeGplInfo platformFoobar = {
+        def p = new DeGplInfo(
+                markerType: 'Foobar',
+        )
+        p.id = 'foobar-platform'
+        p
+    }()
+
+    List<PatientDimension> patientsBoth = createTestPatients(2, -2000, TRIAL_NAME)
+    List<PatientDimension> patientsFoobar = createTestPatients(3, -3000, TRIAL_NAME)
+
+    List<DeSubjectSampleMapping> mrnaAssays =
             HighDimTestData.createTestAssays(patientsBoth, -4000, platformMrna, MRNA_TRIAL_NAME)
 
-        List<DeSubjectSampleMapping> foobarAssays =
+    List<DeSubjectSampleMapping> foobarAssays =
             HighDimTestData.createTestAssays(patientsBoth, -5000, platformFoobar, TRIAL_NAME) +
                     HighDimTestData.createTestAssays(patientsFoobar, -6000, platformFoobar, TRIAL_NAME)
 
-        @Lazy QtQueryMaster allPatientsQueryMaster = createQueryResult(
-                patientsBoth + patientsFoobar)
+    @Lazy QtQueryMaster allPatientsQueryMaster = createQueryResult(
+            patientsBoth + patientsFoobar)
 
-        QueryResult getAllPatientsQueryResult() {
-            getQueryResultFromMaster allPatientsQueryMaster
-        }
-
-        void saveAll() {
-            save([ platformMrna, platformFoobar ])
-            save( patientsBoth + patientsFoobar )
-            save( mrnaAssays + foobarAssays )
-            save([ allPatientsQueryMaster ])
-        }
-
+    QueryResult getAllPatientsQueryResult() {
+        getQueryResultFromMaster allPatientsQueryMaster
     }
 
-
+    void saveAll() {
+        save([ platformMrna, platformFoobar ])
+        save( patientsBoth + patientsFoobar )
+        save( mrnaAssays + foobarAssays )
+        save([ allPatientsQueryMaster ])
+    }
 
 }

@@ -19,10 +19,15 @@
 
 package org.transmartproject.db.dataquery.highdim.vcf
 
+import groovy.transform.EqualsAndHashCode
+
+@EqualsAndHashCode
 class DeVariantSubjectIdxCoreDb implements Serializable {
     DeVariantDatasetCoreDb dataset
     String subjectId
     Long position
+
+    static belongsTo = [dataset: DeVariantDatasetCoreDb]
 
     static mapping = {
         table schema: 'deapp', name: 'de_variant_subject_idx'

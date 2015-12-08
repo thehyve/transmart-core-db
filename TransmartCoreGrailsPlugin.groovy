@@ -17,20 +17,18 @@
  * transmart-core-db.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 import org.springframework.stereotype.Component
-import org.transmartproject.db.accesscontrol.AccessControlChecks
-import org.transmartproject.db.dataquery.clinical.InnerClinicalTabularResultFactory
 import org.transmartproject.db.dataquery.clinical.variables.ClinicalVariableFactory
 import org.transmartproject.db.dataquery.highdim.AbstractHighDimensionDataTypeModule
 import org.transmartproject.db.http.BusinessExceptionResolver
 import org.transmartproject.db.ontology.AcrossTrialsConceptsResourceDecorator
-import org.transmartproject.db.ontology.AcrossTrialsOntologyTerm
 import org.transmartproject.db.ontology.DefaultConceptsResource
 import org.transmartproject.db.support.DatabasePortabilityService
 
 class TransmartCoreGrailsPlugin {
     // the plugin version
-    def version = "1.2.1-SNAPSHOT"
+    def version = "1.2.2-SNAPSHOT"
     // the version or versions of Grails the plugin is designed for
     def grailsVersion = "2.3 > *"
     // resources that are excluded from plugin packaging
@@ -80,12 +78,9 @@ A runtime dependency for tranSMART that implements the Core API
 
         businessExceptionResolver(BusinessExceptionResolver)
 
-        accessControlChecks(AccessControlChecks)
-
         clinicalVariableFactory(ClinicalVariableFactory) {
             disableAcrossTrials = !haveAcrossTrials
         }
-        innerClinicalTabularResultFactory(InnerClinicalTabularResultFactory)
 
         if (haveAcrossTrials) {
             conceptsResourceService(AcrossTrialsConceptsResourceDecorator) {
@@ -101,7 +96,7 @@ A runtime dependency for tranSMART that implements the Core API
                     expression: AbstractHighDimensionDataTypeModule.canonicalName)
         }
 
-        context.'component-scan'('base-package': 'org.transmartproject.db.dataquery.highdim') {
+        context.'component-scan'('base-package': 'org.transmartproject.db') {
             context.'include-filter'(
                     type:       'annotation',
                     expression: Component.canonicalName)
