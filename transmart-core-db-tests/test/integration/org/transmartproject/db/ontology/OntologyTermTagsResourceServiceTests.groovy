@@ -42,6 +42,14 @@ class OntologyTermTagsResourceServiceTests {
                         hasProperty('name', equalTo('1 name 1')),
                         hasProperty('description', equalTo('1 description 1')),
                     ),
+                    allOf(
+                            hasProperty('name', equalTo('Continent')),
+                            hasProperty('description', equalTo('Antarctica')),
+                    ),
+                    allOf(
+                            hasProperty('name', equalTo('T-shirt size')),
+                            hasProperty('description', equalTo('M')),
+                    ),
                 ))
     }
 
@@ -66,6 +74,14 @@ class OntologyTermTagsResourceServiceTests {
                                         hasProperty('name', equalTo('1 name 1')),
                                         hasProperty('description', equalTo('1 description 1')),
                                 ),
+                                allOf(
+                                        hasProperty('name', equalTo('Continent')),
+                                        hasProperty('description', equalTo('Antarctica')),
+                                ),
+                                allOf(
+                                        hasProperty('name', equalTo('T-shirt size')),
+                                        hasProperty('description', equalTo('M')),
+                                ),
                         )),
                 hasEntry(
                         hasProperty('key', equalTo(key2)),
@@ -77,6 +93,14 @@ class OntologyTermTagsResourceServiceTests {
                                 allOf(
                                         hasProperty('name', equalTo('3 name 1')),
                                         hasProperty('description', equalTo('3 description 1')),
+                                ),
+                                allOf(
+                                        hasProperty('name', equalTo('Continent')),
+                                        hasProperty('description', equalTo('Antarctica')),
+                                ),
+                                allOf(
+                                        hasProperty('name', equalTo('T-shirt size')),
+                                        hasProperty('description', equalTo('M')),
                                 ),
                         )),
         )
@@ -101,6 +125,14 @@ class OntologyTermTagsResourceServiceTests {
                                     hasProperty('name', equalTo('1 name 1')),
                                     hasProperty('description', equalTo('1 description 1')),
                             ),
+                            allOf(
+                                    hasProperty('name', equalTo('Continent')),
+                                    hasProperty('description', equalTo('Antarctica')),
+                            ),
+                            allOf(
+                                    hasProperty('name', equalTo('T-shirt size')),
+                                    hasProperty('description', equalTo('M')),
+                            ),
                     )),
                 hasEntry(
                     hasProperty('key', equalTo("${key}bar\\".toString())),
@@ -112,6 +144,14 @@ class OntologyTermTagsResourceServiceTests {
                             allOf(
                                     hasProperty('name', equalTo('2 name 1')),
                                     hasProperty('description', equalTo('2 description 1')),
+                            ),
+                            allOf(
+                                    hasProperty('name', equalTo('Continent')),
+                                    hasProperty('description', equalTo('Antarctica')),
+                            ),
+                            allOf(
+                                    hasProperty('name', equalTo('T-shirt size')),
+                                    hasProperty('description', equalTo('M')),
                             ),
                     )),
         )
