@@ -28,6 +28,7 @@ class ConceptTestData {
 
     List<TableAccess> tableAccesses
     List<I2b2> i2b2List
+    List<I2b2TagType> i2b2TagTypesList
     List<I2b2Tag> i2b2TagsList
     List<ConceptDimension> conceptDimensions
 
@@ -59,12 +60,15 @@ class ConceptTestData {
 
         def conceptDimensions = createConceptDimensions(i2b2List)
 
-        def i2b2Tags = createI2b2Tags(i2b2List, 2)
+        def i2b2TagTypes = createI2b2TagTypes()
+
+        def i2b2Tags = createI2b2Tags(i2b2List, 2, i2b2TagTypes)
 
         new ConceptTestData(
                 tableAccesses: tableAccesses,
                 i2b2List: i2b2List,
                 conceptDimensions: conceptDimensions,
+                i2b2TagTypesList: i2b2TagTypes,
                 i2b2TagsList: i2b2Tags)
     }
 
@@ -96,6 +100,7 @@ class ConceptTestData {
     void saveAll() {
         save tableAccesses
         save i2b2List
+        save i2b2TagTypesList
         save i2b2TagsList
         save conceptDimensions
     }
@@ -195,17 +200,43 @@ class ConceptTestData {
         }
     }
 
-    static List<I2b2Tag> createI2b2Tags(List<I2b2> list, int number = 2) {
+    static List<I2b2TagType> createI2b2TagTypes(int startIndex = 4) {
+        def tagTypes = [
+            'Continent': ['Asia', 'Africa', 'North America', 'South America', 'Antarctica', 'Europe', 'Australia'],
+            'T-shirt size': ['XS', 'S', 'M', 'L', 'XL'],
+        ]
+        int index = startIndex
+        tagTypes.collect { type, options -> new I2b2TagType(
+                nodeType: 'STUDY',
+                valueType: 'NON_ANALYZED_STRING',
+                shownIfEmpty: true,
+                index: index++,
+                solrFieldName: type.toLowerCase().replaceAll(' ', '_'),
+                tagType: type,
+                options: options.collect { option -> new I2b2TagOption(value: option) },
+        )}
+    }
+
+    static List<I2b2Tag> createI2b2Tags(List<I2b2> list, int number = 2, List<I2b2TagType> tagTypes = []) {
         list.collectMany { I2b2 i2b2 ->
-            (1..number).collect { iteration ->
+            def tags = (1..number).collect { iteration ->
                 new I2b2Tag(
                         ontologyTermFullName: i2b2.fullName,
                         name: "${i2b2.code} name ${iteration}",
-                        description: "${i2b2.code} description ${iteration}",
+                        tag: "${i2b2.code} description ${iteration}",
                         //for reverse order
                         position: number - iteration + 1
                 )
             }
+            tags += tagTypes.collect { I2b2TagType tagType ->
+                new I2b2Tag(
+                        ontologyTermFullName: i2b2.fullName,
+                        name: tagType.tagType,
+                        option: tagType.options.asList().sort({it.value})[1],
+                        position: tagType.index
+                )
+            }
+            tags
         }
     }
 
