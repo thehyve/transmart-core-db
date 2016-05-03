@@ -206,15 +206,18 @@ class ConceptTestData {
             'T-shirt size': ['XS', 'S', 'M', 'L', 'XL'],
         ]
         int index = startIndex
-        tagTypes.collect { type, options -> new I2b2TagType(
+        tagTypes.collect { type, options ->
+            def tagType = new I2b2TagType(
                 nodeType: 'STUDY',
                 valueType: 'NON_ANALYZED_STRING',
                 shownIfEmpty: true,
                 index: index++,
                 solrFieldName: type.toLowerCase().replaceAll(' ', '_'),
                 tagType: type,
-                options: options.collect { option -> new I2b2TagOption(value: option) },
-        )}
+            )
+            options.each { option -> tagType.addToOptions(new I2b2TagOption(value: option)) }
+            tagType
+        }
     }
 
     static List<I2b2Tag> createI2b2Tags(List<I2b2> list, int number = 2, List<I2b2TagType> tagTypes = []) {
