@@ -24,7 +24,9 @@ import org.transmartproject.db.dataquery.highdim.SampleBioMarkerTestData
 import org.transmartproject.db.dataquery.highdim.acgh.AcghTestData
 import org.transmartproject.db.dataquery.highdim.mrna.MrnaTestData
 import org.transmartproject.db.i2b2data.I2b2Data
+import org.transmartproject.db.miscTables.ConceptCounts
 import org.transmartproject.db.ontology.ConceptTestData
+import org.transmartproject.db.summaries.ConceptCount
 
 class TestData {
 
@@ -35,6 +37,7 @@ class TestData {
     MrnaTestData mrnaData
     AcghTestData acghData
     SampleBioMarkerTestData bioMarkerTestData
+    ConceptCounts conceptCounts
 
     static TestData createDefault() {
         def conceptData = ConceptTestData.createDefault()
@@ -53,6 +56,8 @@ class TestData {
 
         def clinicalData = ClinicalTestData.createDefault(conceptData.i2b2List, i2b2Data.patients)
 
+        def conceptCounts = new ConceptCounts()
+
         clinicalData.facts += extraFacts
 
         def bioMarkerTestData = new SampleBioMarkerTestData()
@@ -67,6 +72,7 @@ class TestData {
                 mrnaData:  mrnaData,
                 acghData: acghData,
                 bioMarkerTestData: bioMarkerTestData,
+                conceptCounts: conceptCounts,
         )
     }
 
@@ -79,5 +85,6 @@ class TestData {
         mrnaData?.saveAll()
         mrnaData?.updateDoubleScaledValues()
         acghData?.saveAll()
+        conceptCounts?.saveAll()
     }
 }
