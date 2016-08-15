@@ -20,6 +20,7 @@
 package org.transmartproject.db.querytool
 
 import org.hibernate.jdbc.Work
+import org.transmartproject.core.exceptions.AccessDeniedException
 import org.transmartproject.core.exceptions.InvalidRequestException
 import org.transmartproject.core.exceptions.NoSuchResourceException
 import org.transmartproject.core.querytool.QueriesResource
@@ -161,10 +162,50 @@ class QueriesResourceService implements QueriesResource {
     }
 
     @Override
+    QueryResult runDisablingQuery(Long id,
+                         String username) throws InvalidRequestException
+    {
+        QtQueryResultInstance resultInstance = getEnabledQueryResultFromId(id)
+
+        if (resultInstance.queryInstance.userId == username) {
+            resultInstance.deleteFlag = "Y"
+        }
+        else{
+            throw new AccessDeniedException("User ${username} has no permission" +
+                    " to disable query result instance with id $id")
+        }
+
+        def newResultInstance = resultInstance.save()
+        if (!newResultInstance) {
+            throw new RuntimeException('Failure disabling resultInstance ' +
+                    'Errors: ' +
+                    resultInstance.errors)
+        }
+
+        resultInstance
+    }
+
+    @Override
     QueryResult getQueryResultFromId(Long id) throws NoSuchResourceException {
         QtQueryResultInstance.get(id) ?:
                 {  throw new NoSuchResourceException(
                         "Could not find query result instance with id $id") }()
+    }
+
+    QueryResult getEnabledQueryResultFromId(Long id) throws NoSuchResourceException {
+        List answer = QtQueryResultInstance.executeQuery(
+                '''SELECT R.queryInstance.queryResults FROM
+                        QtQueryResultInstance R WHERE R.id = ?
+        AND R.deleteFlag = ?''',
+                [id, 'N']
+        )
+        if(!answer)
+                {
+                    throw new NoSuchResourceException(
+                            "Could not find query result instance with id $id" +
+                                    "+ and delete_flag = 'N'")
+                }
+        answer[0]
     }
 
     @Override
