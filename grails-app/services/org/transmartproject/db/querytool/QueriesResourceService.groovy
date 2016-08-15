@@ -165,7 +165,7 @@ class QueriesResourceService implements QueriesResource {
     QueryResult runDisablingQuery(Long id,
                          String username) throws InvalidRequestException
     {
-        QtQueryResultInstance resultInstance = getEnabledQueryResultFromId(id)
+        QtQueryResultInstance resultInstance = getQueryResultFromId(id)
 
         if (resultInstance.queryInstance.userId == username) {
             resultInstance.deleteFlag = "Y"
@@ -187,24 +187,17 @@ class QueriesResourceService implements QueriesResource {
 
     @Override
     QueryResult getQueryResultFromId(Long id) throws NoSuchResourceException {
-        QtQueryResultInstance.get(id) ?:
-                {  throw new NoSuchResourceException(
-                        "Could not find query result instance with id $id") }()
-    }
-
-    QueryResult getEnabledQueryResultFromId(Long id) throws NoSuchResourceException {
         List answer = QtQueryResultInstance.executeQuery(
                 '''SELECT R.queryInstance.queryResults FROM
                         QtQueryResultInstance R WHERE R.id = ?
         AND R.deleteFlag = ?''',
                 [id, 'N']
         )
-        if(!answer)
-                {
-                    throw new NoSuchResourceException(
-                            "Could not find query result instance with id $id" +
-                                    "+ and delete_flag = 'N'")
-                }
+        if (!answer) {
+            throw new NoSuchResourceException(
+                    "Could not find query result instance with id $id" +
+                            "+ and delete_flag = 'N'")
+        }
         answer[0]
     }
 
