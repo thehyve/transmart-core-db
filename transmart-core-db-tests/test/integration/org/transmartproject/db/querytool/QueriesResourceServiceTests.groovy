@@ -23,6 +23,7 @@ import grails.test.mixin.TestMixin
 import org.junit.Before
 import org.junit.Test
 import org.transmartproject.core.dataquery.Patient
+import org.transmartproject.core.exceptions.AccessDeniedException
 import org.transmartproject.core.exceptions.InvalidRequestException
 import org.transmartproject.core.exceptions.NoSuchResourceException
 import org.transmartproject.core.querytool.*
@@ -406,4 +407,36 @@ class QueriesResourceServiceTests {
         assertThat result, hasProperty('username', is(username))
     }
 
+    @Test
+    void testDisablingQueryAccessDenied() {
+        def username = 'user'
+
+        def queryMaster = QueryResultData.createQueryResult([
+                PatientDimension.load(100) // see setUp()
+
+        ])
+        queryMaster.save(failOnError: true)
+        QueryResult savedResultInstance =
+                QueryResultData.getQueryResultFromMaster(queryMaster)
+
+        shouldFail AccessDeniedException, {
+            queriesResourceService.runDisablingQuery(savedResultInstance.id, username)
+        }
+    }
+
+    @Test
+    void testDisablingQueryBuilding() {
+        def username = 'fake-user'
+
+        def queryMaster = QueryResultData.createQueryResult([
+                PatientDimension.load(100), // see setUp()
+
+        ])
+        queryMaster.save(failOnError: true)
+        QueryResult savedResultInstance =
+                QueryResultData.getQueryResultFromMaster(queryMaster)
+
+        def result = queriesResourceService.runDisablingQuery(savedResultInstance.id, username)
+        assertThat result, hasProperty('deleteFlag', is('Y'))
+    }
 }
