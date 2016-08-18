@@ -19,6 +19,7 @@
 
 package org.transmartproject.db.querytool
 
+import grails.gorm.DetachedCriteria
 import org.hibernate.jdbc.Work
 import org.transmartproject.core.exceptions.AccessDeniedException
 import org.transmartproject.core.exceptions.InvalidRequestException
@@ -199,6 +200,14 @@ class QueriesResourceService implements QueriesResource {
                             "+ and delete_flag = 'N'")
         }
         answer[0]
+    }
+
+    @Override
+    List<QueryResult> getQueryResultsByUsername(String username) {
+        def query = QtQueryResultInstance.where {
+            queryInstance.userId == username
+        }
+        query.findAll()
     }
 
     @Override
