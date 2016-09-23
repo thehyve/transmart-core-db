@@ -43,9 +43,9 @@ class StudiesResourceService implements StudiesResource {
                 WHERE (I.fullName = TN.fullName)'''
         // the query is awkward (cross join) due to the non-existence of an
         // association. See comment on I2b2TrialNodes
-
+        boolean access = true
         query.list().collect { row ->
-            new StudyImpl(ontologyTerm: row[0], id: row[1])
+            new StudyImpl(ontologyTerm: row[0], id: row[1], access: access)
         } as Set
     }
 
@@ -68,7 +68,8 @@ class StudiesResourceService implements StudiesResource {
             throw new UnexpectedResultException(
                     "Found more than one study term with id '$id'")
         }
-        new StudyImpl(ontologyTerm: result.first(), id: normalizedStudyId)
+        boolean access = true
+        new StudyImpl(ontologyTerm: result.first(), id: normalizedStudyId, access: access)
     }
 
     @Override

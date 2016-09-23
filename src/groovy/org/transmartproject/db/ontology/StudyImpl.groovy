@@ -29,6 +29,7 @@ class StudyImpl implements Study {
 
     String id
     OntologyTerm ontologyTerm
+    boolean access
 
     @Override
     Set<Patient> getPatients() {
