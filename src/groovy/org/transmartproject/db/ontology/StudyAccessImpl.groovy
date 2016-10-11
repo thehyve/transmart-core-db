@@ -14,4 +14,8 @@ class StudyAccessImpl implements StudyAccess{
 
     Map accessibileByUser
 
+    @Override
+    Map getAccessibleByUser() {
+        return accessibileByUser
+    }
 }
