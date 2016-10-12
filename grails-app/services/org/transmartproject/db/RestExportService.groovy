@@ -48,6 +48,81 @@ class RestExportService {
         } catch (IOException e) {
             System.err.println(e);
         }
+    }
 
+    File parseFiles (files) {
+        String uuid = UUID.randomUUID().toString()
+        List headerNames = []
+        List currentHeaders = []
+        HashMap fileInfo = new HashMap()
+        File outFile = new File(System.getProperty("java.io.tmpdir")+uuid+'.txt')
+        files.each { file ->
+            String fileContents = file.text
+            int lineNumber = 1
+            fileContents.eachLine { line ->
+                List lineList = line.split('\t')
+                if (lineNumber == 1) {
+                    lineList.each { rowHeader ->
+                        currentHeaders.add(rowHeader)
+                    }
+                } else {
+                    String columnName = lineList[0]
+                    if (!fileInfo.containsKey(columnName)) {
+                        fileInfo[columnName] = [:]
+                    }
+                    lineList.each { infoPiece ->
+                        if (infoPiece != "") {
+                            int index = lineList.indexOf(infoPiece)
+                            String currentRowHeader = currentHeaders[index].toString()
+                            def currentInfoMap = fileInfo.get(columnName)
+                            if (currentRowHeader in currentInfoMap) {
+                                assert fileInfo[columnName][currentRowHeader] == infoPiece
+                            } else {
+                                fileInfo[columnName][currentRowHeader] = infoPiece
+                            }
+                        }
+                }
+                }
+                lineNumber++
+            }
+            currentHeaders.each { header ->
+                if (!headerNames.contains(header)) {
+                    headerNames[(headerNames.size())] = header
+                }
+            }
+            currentHeaders = []
+        }
+        headerNames.each { header ->
+            outFile << header+'\t'
+        }
+        ArrayList headerNamesList = headerNames.toArray()
+        outFile << '\n'
+        fileInfo.each { key, value ->
+            def outList = createTabList(headerNamesList)
+            def infoMap = value
+            infoMap.each {keyInfo, valueInfo ->
+                int headerIndex = headerNamesList.findIndexOf {it == keyInfo}
+                outList[headerIndex] = valueInfo
+            }
+            outList.each { finalInfo ->
+                if ('\t' in finalInfo) {
+                    outFile << finalInfo
+                } else{
+                    outFile << finalInfo+'\t'
+                }
+            }
+            outFile << '\n'
+            outList.clear()
+        }
+        print(fileInfo)
+        outFile
+    }
+
+    List createTabList(headerList){
+        def outList = new ArrayList<>(headerList.size())
+        headerList.each {
+            outList.add('\t')
+        }
+        return outList
     }
 }
