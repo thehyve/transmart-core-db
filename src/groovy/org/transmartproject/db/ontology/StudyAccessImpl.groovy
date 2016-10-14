@@ -12,6 +12,6 @@ class StudyAccessImpl implements StudyAccess{
 
     Study study
 
-    Map accessibileByUser
+    Map accessibleByUser
 
 }
