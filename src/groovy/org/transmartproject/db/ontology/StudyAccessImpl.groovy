@@ -9,8 +9,4 @@ class StudyAccessImpl implements StudyAccess{
 
     Map accessibleByUser
 
-    @Override
-    Map getAccessibleByUser() {
-        return accessibileByUser
-    }
 }
