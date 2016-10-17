@@ -15,6 +15,8 @@ class RestExportService {
     @Autowired
     DataFetchTaskFactory dataFetchTaskFactory
 
+    private final ZIP_FILE_NAME = "Data_Export.zip"
+
     List<File> export(arguments) {
         DataFetchTask task = dataFetchTaskFactory.createTask(arguments)
         task.getTsv()
@@ -22,6 +24,7 @@ class RestExportService {
 
 
     File createZip(ArrayList<File> files) {
+        //TODO: Add naming of files based on content of file, instead of a number.
         Path tmpPath = createTmpDir()
         def ant = new AntBuilder()
         int number = 1
@@ -31,33 +34,35 @@ class RestExportService {
                     tofile: "$tmpPath/$nameFile .txt")
             number++
         }
-        ant.zip(destfile: "$tmpPath/file.zip",
+        ant.zip(destfile: "$tmpPath/$ZIP_FILE_NAME",
                 basedir: tmpPath)
-        File zipFile = new File("$tmpPath/file.zip")
+        File zipFile = new File("$tmpPath/$ZIP_FILE_NAME")
         zipFile
     }
 
     Path createTmpDir() {
         String uuid = UUID.randomUUID().toString()
         Path defaultTmp = Paths.get(System.getProperty("java.io.tmpdir"))
-
         try {
             def tmp_2 = Files.createTempDirectory(defaultTmp, uuid)
             return tmp_2
 
         } catch (IOException e) {
-            System.err.println(e);
+            "No Temporary directory created. Java.io.tmpdir not set correctly. $e"
         }
     }
 
-    File parseFiles (files) {
+    List parseFiles (files, outputFormats) {
+        //TODO: Beautify the code, maybe change the location of this code to DataFetchTask?
         String uuid = UUID.randomUUID().toString()
         List headerNames = []
         List currentHeaders = []
+        List outFiles = []
         HashMap fileInfo = new HashMap()
-        File outFile = new File(System.getProperty("java.io.tmpdir")+uuid+'.txt')
+        File outFile = new File(System.getProperty("java.io.tmpdir") + uuid + '.txt')
         files.each { file ->
             String fileContents = file.text
+            boolean isBiomarker = false
             int lineNumber = 1
             fileContents.eachLine { line ->
                 List lineList = line.split('\t')
@@ -65,24 +70,32 @@ class RestExportService {
                     lineList.each { rowHeader ->
                         currentHeaders.add(rowHeader)
                     }
-                } else {
-                    String columnName = lineList[0]
-                    if (!fileInfo.containsKey(columnName)) {
-                        fileInfo[columnName] = [:]
-                    }
-                    lineList.each { infoPiece ->
-                        if (infoPiece != "") {
-                            int index = lineList.indexOf(infoPiece)
-                            String currentRowHeader = currentHeaders[index].toString()
-                            def currentInfoMap = fileInfo.get(columnName)
-                            if (currentRowHeader in currentInfoMap) {
-                                assert fileInfo[columnName][currentRowHeader] == infoPiece
-                            } else {
-                                fileInfo[columnName][currentRowHeader] = infoPiece
+                    isBiomarker = '"Bio marker"' in currentHeaders ? true : isBiomarker
+                } else if (isBiomarker){
+                        file in outFiles ? null : outFiles.add(file)
+                        currentHeaders.clear()
+                } else if (!(isBiomarker) && lineNumber > 1) {
+                        String columnName = lineList[0]
+                        if (!fileInfo.containsKey(columnName)) {
+                            fileInfo[columnName] = [:]
+                        }
+                        lineList.each { infoPiece ->
+                            if (infoPiece != "") {
+                                int index = lineList.indexOf(infoPiece)
+                                String currentRowHeader = currentHeaders[index].toString()
+                                def currentInfoMap = fileInfo.get(columnName)
+                                if (currentRowHeader in currentInfoMap) {
+                                    try {
+                                        assert fileInfo[columnName][currentRowHeader] == infoPiece
+                                    } catch(AssertionError e) {
+                                        log.error(e)
+                                    }
+                                } else {
+                                    fileInfo[columnName][currentRowHeader] = infoPiece
+                                }
                             }
                         }
-                }
-                }
+                    }
                 lineNumber++
             }
             currentHeaders.each { header ->
@@ -92,6 +105,18 @@ class RestExportService {
             }
             currentHeaders = []
         }
+        outputFormats.each { outputFormat ->
+            switch (outputFormat) {
+                case 'tsv':
+                    def file = WriteToTsv(headerNames, fileInfo, outFile)
+                    outFiles.add(file)
+            }
+        }
+        outFiles
+    }
+
+
+    def WriteToTsv(List<String> headerNames, HashMap fileInfo, File outFile){
         headerNames.each { header ->
             outFile << header+'\t'
         }

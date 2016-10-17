@@ -168,13 +168,15 @@ class DataFetchTask  {
     private static void writeHeader(CSVWriter writer,
                                     boolean isBioMarker,
                                     List<? extends DataColumn> columns) {
-        List line = ['Row Label']
+        List line = []
         if (isBioMarker) {
             line += 'Bio marker'
+        } else{
+            line += 'In Trial ID'
         }
         line += columns.collect {
             if (it instanceof AssayColumn) {
-                it.patient.id  // for high dim data, use patient id rather than row label as the CSV header
+                it.hasProperty('sampleCode') ? it.sampleCode : it.patientInTrialId  // for high dim data, use patient id rather than row label as the CSV header
             } else {
                 it.label
             }
@@ -185,7 +187,12 @@ class DataFetchTask  {
 
     private static void writeLine(CSVWriter writer, boolean isBioMarker, DataRow row) {
         def rowLabel = row.hasProperty('patient') && row.patient.hasProperty('id') ? row.patient.id : row.label
-        List line = [rowLabel]
+        List line = []
+        if ( row.hasProperty('patient') && row.patient.hasProperty('inTrialId')){
+            def inTrialId = row.patient.inTrialId
+            line += inTrialId
+        }
+
         if (isBioMarker) {
             line += ((BioMarkerDataRow) row).bioMarker
         }
