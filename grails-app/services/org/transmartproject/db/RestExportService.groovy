@@ -54,12 +54,12 @@ class RestExportService {
 
     List parseFiles (files, outputFormats) {
         //TODO: Beautify the code, maybe change the location of this code to DataFetchTask?
-        String uuid = UUID.randomUUID().toString()
         List headerNames = []
         List currentHeaders = []
         List outFiles = []
-        HashMap fileInfo = new HashMap()
-        File outFile = new File(System.getProperty("java.io.tmpdir") + uuid + '.txt')
+        List removableHeaders = []
+        List usedHeaders = []
+        Map fileInfo = new HashMap()
         files.each { file ->
             String fileContents = file.text
             boolean isBiomarker = false
@@ -82,7 +82,21 @@ class RestExportService {
                         lineList.each { infoPiece ->
                             if (infoPiece != "") {
                                 int index = lineList.indexOf(infoPiece)
-                                String currentRowHeader = currentHeaders[index].toString()
+                                String currentRowHeader = currentHeaders[index]
+                                usedHeaders.add(currentRowHeader)
+                                try{
+                                    def categoricalHeader = currentRowHeader.tokenize("\\")
+                                    def categoricalValue = '"'+categoricalHeader[-2]+'"'
+                                    if (infoPiece == categoricalValue){
+                                        if (!(categoricalHeader[-3] in currentHeaders)) {
+                                            currentHeaders[index] = categoricalHeader[-3]
+                                        }
+                                        removableHeaders.add(currentRowHeader)
+                                        currentRowHeader = categoricalHeader[-3]
+                                    }
+                                } catch (Exception e){
+
+                                }
                                 def currentInfoMap = fileInfo.get(columnName)
                                 if (currentRowHeader in currentInfoMap) {
                                     try {
@@ -98,6 +112,8 @@ class RestExportService {
                     }
                 lineNumber++
             }
+            removableHeaders += currentHeaders-usedHeaders
+            currentHeaders.removeAll(removableHeaders)
             currentHeaders.each { header ->
                 if (!headerNames.contains(header)) {
                     headerNames[(headerNames.size())] = header
@@ -108,7 +124,7 @@ class RestExportService {
         outputFormats.each { outputFormat ->
             switch (outputFormat) {
                 case 'tsv':
-                    def file = WriteToTsv(headerNames, fileInfo, outFile)
+                    def file = WriteToTsv(headerNames, fileInfo)
                     outFiles.add(file)
             }
         }
@@ -116,7 +132,9 @@ class RestExportService {
     }
 
 
-    def WriteToTsv(List<String> headerNames, HashMap fileInfo, File outFile){
+    def WriteToTsv(List<String> headerNames, HashMap fileInfo){
+        String uuid = UUID.randomUUID().toString()
+        File outFile = new File(System.getProperty("java.io.tmpdir") + uuid + '.txt')
         headerNames.each { header ->
             outFile << header+'\t'
         }
