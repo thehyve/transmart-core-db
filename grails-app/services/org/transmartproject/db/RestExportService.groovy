@@ -2,8 +2,13 @@ package org.transmartproject.db
 
 import grails.transaction.Transactional
 import org.springframework.beans.factory.annotation.Autowired
+import org.transmartproject.core.dataquery.highdim.assayconstraints.AssayConstraint
+import org.transmartproject.core.ontology.OntologyTerm
 import org.transmartproject.export.Tasks.DataFetchTask
 import org.transmartproject.export.Tasks.DataFetchTaskFactory
+import org.transmartproject.core.dataquery.highdim.HighDimensionResource
+
+import static org.transmartproject.core.ontology.OntologyTerm.VisualAttributes.HIGH_DIMENSIONAL
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -14,6 +19,9 @@ class RestExportService {
 
     @Autowired
     DataFetchTaskFactory dataFetchTaskFactory
+
+    @Autowired
+    HighDimensionResource highDimensionResourceService
 
     private final ZIP_FILE_NAME = "Data_Export.zip"
 
@@ -60,18 +68,24 @@ class RestExportService {
         }
     }
 
-    List parseFiles (files, outputFormats) {
+    List parseFiles (List files, List outputFormats) {
         //TODO: Beautify the code, maybe change the location of this code to DataFetchTask?
         List headerNames = []
         List outFiles = []
         Map fileInfo = new HashMap()
+        //Get class of result. Compare it with the other classes. If they are the same they could be combined (at least for clinical data)
+        //
         files.each { file ->
+            //Get other results from list with the same class. Pass them to parseFile together where they'll be combined.
+            //Find way to know if the result is already combined with another class, so you don't end up with both the same objects.
             def returnList = parseFile(file, fileInfo, headerNames)
             fileInfo = returnList[0]
             boolean isBiomarker = returnList[1]
             isBiomarker ? outFiles.add(file) : null
             headerNames = returnList[2]
         }
+
+        //Pass combined classes to a file format writer.
         outputFormats.each { outputFormat ->
             switch (outputFormat) {
                 case 'tsv':
@@ -173,6 +187,36 @@ class RestExportService {
         }
         print(fileInfo)
         outFile
+    }
+
+    def getHighDimMetaData(OntologyTerm term) {
+        // Retrieve all descendant terms that have the HIGH_DIMENSIONAL attribute
+        def terms = term.getAllDescendants() + term
+        def highDimTerms = terms.findAll { it.visualAttributes.contains(HIGH_DIMENSIONAL) }
+
+        if (highDimTerms) {
+            // Put all high dimensional term keys in a disjunction constraint
+            def constraint = highDimensionResourceService.createAssayConstraint(
+                    AssayConstraint.DISJUNCTION_CONSTRAINT,
+                    subconstraints: [
+                            (AssayConstraint.ONTOLOGY_TERM_CONSTRAINT):
+                                    highDimTerms.collect({
+                                        [concept_key: it.key]
+                                    })
+                    ]
+            )
+
+            def datatypes = highDimensionResourceService.getSubResourcesAssayMultiMap([constraint])
+            def dataTypeDescriptions = datatypes.keySet().collect({
+                it.dataTypeDescription
+            })
+
+            [ dataTypes: dataTypeDescriptions ]
+        }
+        else {
+            // No high dimensional data found for this term, in this case this means it is clinical data
+            [ dataTypes: ["Clinical data"] ]
+        }
     }
 
     List createTabList(headerList){
