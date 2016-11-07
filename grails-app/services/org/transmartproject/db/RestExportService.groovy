@@ -8,6 +8,7 @@ import org.transmartproject.export.Tasks.DataExportFetchTask
 import org.transmartproject.export.Tasks.DataExportFetchTaskFactory
 import org.transmartproject.core.dataquery.highdim.HighDimensionResource
 import org.transmartproject.core.ontology.ConceptsResource
+import org.transmartproject.export.DataTypeRetrieved
 
 import static org.transmartproject.core.ontology.OntologyTerm.VisualAttributes.HIGH_DIMENSIONAL
 
@@ -22,52 +23,23 @@ class RestExportService {
 
     ConceptsResource conceptsResourceService
 
+    int cohortNumberID
+
     List<File> export(arguments) {
         DataExportFetchTask task = dataExportFetchTaskFactory.createTask(arguments)
         task.getTsv()
     }
 
-    def formatDataTypes(List datatypes){
-        //Maybe make this a marshaller.
-        def returnDataTypeList = []
-        def dataTypesList = []
-        datatypes.each { dataTypeMap ->
-            dataTypeMap.each {key, value->
-                if (key in dataTypesList){
-                    returnDataTypeList.each { map ->
-                        if (key in map.values()){
-                            value.each{it.remove('datatypeCode')}
-                            map.get('cohorts').add([concepts:value])
-                        }
-                    }
-                } else{
-                    dataTypesList.add(key)
-                    def datatypeCode = value.collect({it ->
-                        it.get('datatypeCode')})
-                    value.each{it.remove('datatypeCode')}
-                    def datatypeMap = [dataType:key,
-                                       dataTypeCode: datatypeCode[0],
-                                       cohorts:[[concepts:value]]]
-                    returnDataTypeList.add(datatypeMap)
-                }
-            }
-        }
-        returnDataTypeList
-    }
-
-
-    def getDataTypes(List conceptKeysList){
-        List cohortDataTypes = []
-        Map datatypesMap = [:]
+    public def getDataTypes(List conceptKeysList, List dataTypes, Integer cohortNumber){
+        cohortNumberID = cohortNumber
         conceptKeysList.each { conceptKey ->
             OntologyTerm concept = conceptsResourceService.getByKey(conceptKey)
-            datatypesMap = getHighDimDataType(concept, datatypesMap)
+            dataTypes = getDataType(concept, dataTypes)
         }
-        cohortDataTypes += datatypesMap
-        cohortDataTypes
+        dataTypes
     }
 
-    def getHighDimDataType(OntologyTerm term, Map datatypesMap) {
+    private def getDataType(OntologyTerm term, List dataTypes) {
         // Retrieve all descendant terms that have the HIGH_DIMENSIONAL attribute
         def terms = term.getAllDescendants() + term
         def highDimTerms = terms.findAll { it.visualAttributes.contains(HIGH_DIMENSIONAL) }
@@ -83,34 +55,43 @@ class RestExportService {
                                     })
                     ]
             )
-            //datatypes contains the number of patients for each datatype.
+            //TODO: List with datatype objects. This part gets moved to the serializationhelper
             def datatypes = highDimensionResourceService.getSubResourcesAssayMultiMap([constraint])
             datatypes.collect({ key, value ->
-                String datatype = key.dataTypeDescription
-                String datatypeCode = key.dataTypeName
-                if (datatype in datatypesMap.keySet()){
-                    // term.getPatientCount() can also be value.size(). They give different numbers but I'm not sure
-                    // what's the difference
-                    datatypesMap[datatype].add([numOfPatients: term.getPatientCount(), conceptPath: term.fullName , datatypeCode: datatypeCode])
-                } else{
-                    datatypesMap[datatype] = [[numOfPatients: term.getPatientCount(), conceptPath: term.fullName, datatypeCode: datatypeCode]]
-                }
+                dataTypes = addDataType(term, dataTypes, key)
             })
-            datatypesMap
+            dataTypes
         }
         else {
             // No high dimensional data found for this term, this means it is clinical data
-            String datatype = "Clinical data"
-            String datatypeCode = "clinical"
-            if (datatype in datatypesMap.keySet()){
-                // term.getPatientCount() can also be value.size(). They give different numbers but I'm not sure
-                // what's the difference
-                datatypesMap[datatype].add([numOfPatients: term.patientCount, conceptPath: term.fullName , datatypeCode: datatypeCode])
-            } else{
-                datatypesMap[datatype] = [[numOfPatients: term.patientCount, conceptPath: term.fullName, datatypeCode: datatypeCode]]
-            }
-            datatypesMap
+            dataTypes = addDataType(term, dataTypes)
+        dataTypes
         }
+    }
+
+    private List<DataTypeRetrieved> addDataType(OntologyTerm term, List<DataTypeRetrieved> dataTypes, datatype = null) {
+        String dataTypeString = datatype ? datatype.dataTypeDescription :"Clinical data"
+        String dataTypeCode =  datatype ? datatype.dataTypeName : "clinical"
+        List tempDataTypes = dataTypes.collect {it.dataType}
+        if (dataTypeString in tempDataTypes){
+            int index = tempDataTypes.indexOf(dataTypeString)
+            DataTypeRetrieved dataType = dataTypes[index]
+            addOntologyTerm(term, dataType)
+        } else{
+            DataTypeRetrieved dataType = new DataTypeRetrieved(dataType: dataTypeString, dataTypeCode: dataTypeCode)
+            addOntologyTerm(term, dataType)
+            dataTypes.add(dataType)
+        }
+        dataTypes
+    }
+
+    private void addOntologyTerm(OntologyTerm term, DataTypeRetrieved dataType) {
+        if(cohortNumberID in dataType.OntologyTermsMap.keySet()) {
+            dataType.OntologyTermsMap[cohortNumberID].add(term)
+        } else {
+            dataType.OntologyTermsMap[cohortNumberID] = [term]
+        }
+
     }
 
 }

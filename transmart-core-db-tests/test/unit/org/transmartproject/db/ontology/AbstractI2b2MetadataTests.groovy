@@ -62,7 +62,6 @@ class AbstractI2b2MetadataTests {
   <CreationDateTime>04/15/2007 01:23:14</CreationDateTime>
   <TestID>UA-BLD</TestID>
   <TestName>Occult Blood</TestName>
-  <DataType>Enum</DataType>
   <CodeType>GRP</CodeType>
   <Loinc>5794-3</Loinc>
   <Flagstouse>HL</Flagstouse>
