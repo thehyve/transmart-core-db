@@ -36,7 +36,7 @@ class RestExportService {
         task.getTsv()
     }
 
-    public def retrieveDataTypes(params) {
+    public List<DataTypeRetrieved> retrieveDataTypes(params) {
         if (!(params.containsKey('concepts'))) {
             throw new NoSuchResourceException("No parameter named concepts was given.")
         }
@@ -51,7 +51,7 @@ class RestExportService {
         try {
             def conceptArguments = jsonSlurper.parseText(conceptParameters)
             int cohortNumber = 1
-            conceptArguments.each { it ->
+            conceptArguments.cohorts.each { it ->
                 List conceptKeysList = it.conceptKeys
                 cohortNumberID = cohortNumber
                 conceptKeysList.collect { conceptKey ->
