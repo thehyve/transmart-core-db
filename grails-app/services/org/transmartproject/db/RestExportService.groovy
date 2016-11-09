@@ -1,14 +1,18 @@
 package org.transmartproject.db
 
 import grails.transaction.Transactional
+import groovy.json.JsonException
+import groovy.json.JsonSlurper
 import org.springframework.beans.factory.annotation.Autowired
+import org.transmartproject.core.dataquery.highdim.HighDimensionResource
 import org.transmartproject.core.dataquery.highdim.assayconstraints.AssayConstraint
+import org.transmartproject.core.exceptions.InvalidArgumentsException
+import org.transmartproject.core.exceptions.NoSuchResourceException
+import org.transmartproject.core.ontology.ConceptsResource
 import org.transmartproject.core.ontology.OntologyTerm
+import org.transmartproject.export.DataTypeRetrieved
 import org.transmartproject.export.Tasks.DataExportFetchTask
 import org.transmartproject.export.Tasks.DataExportFetchTaskFactory
-import org.transmartproject.core.dataquery.highdim.HighDimensionResource
-import org.transmartproject.core.ontology.ConceptsResource
-import org.transmartproject.export.DataTypeRetrieved
 
 import static org.transmartproject.core.ontology.OntologyTerm.VisualAttributes.HIGH_DIMENSIONAL
 
@@ -25,21 +29,44 @@ class RestExportService {
 
     int cohortNumberID
 
+    List<DataTypeRetrieved> dataTypes
+
     List<File> export(arguments) {
         DataExportFetchTask task = dataExportFetchTaskFactory.createTask(arguments)
         task.getTsv()
     }
 
-    public def getDataTypes(List conceptKeysList, List dataTypes, Integer cohortNumber){
-        cohortNumberID = cohortNumber
-        conceptKeysList.each { conceptKey ->
-            OntologyTerm concept = conceptsResourceService.getByKey(conceptKey)
-            dataTypes = getDataType(concept, dataTypes)
+    public def retrieveDataTypes(params) {
+        if (!(params.containsKey('concepts'))) {
+            throw new NoSuchResourceException("No parameter named concepts was given.")
         }
-        dataTypes
+
+        if (params.get('concepts') == "") {
+            throw new InvalidArgumentsException("Parameter concepts has no value.")
+        }
+
+        def jsonSlurper = new JsonSlurper()
+        def conceptParameters = params.get('concepts').decodeURL()
+        dataTypes = []
+        try {
+            def conceptArguments = jsonSlurper.parseText(conceptParameters)
+            int cohortNumber = 1
+            conceptArguments.each { it ->
+                List conceptKeysList = it.conceptKeys
+                cohortNumberID = cohortNumber
+                conceptKeysList.collect { conceptKey ->
+                    getDataType(conceptKey)
+                }
+                cohortNumber += 1
+            }
+            dataTypes
+        } catch (JsonException e) {
+            throw new InvalidArgumentsException("Given parameter was non valid JSON.")
+        }
     }
 
-    private def getDataType(OntologyTerm term, List dataTypes) {
+    private void getDataType(String conceptKey) {
+        OntologyTerm term = conceptsResourceService.getByKey(conceptKey)
         // Retrieve all descendant terms that have the HIGH_DIMENSIONAL attribute
         def terms = term.getAllDescendants() + term
         def highDimTerms = terms.findAll { it.visualAttributes.contains(HIGH_DIMENSIONAL) }
@@ -55,38 +82,33 @@ class RestExportService {
                                     })
                     ]
             )
-            //TODO: List with datatype objects. This part gets moved to the serializationhelper
             def datatypes = highDimensionResourceService.getSubResourcesAssayMultiMap([constraint])
             datatypes.collect({ key, value ->
-                dataTypes = addDataType(term, dataTypes, key)
+                addDataType(term, key)
             })
-            dataTypes
-        }
-        else {
+        } else {
             // No high dimensional data found for this term, this means it is clinical data
-            dataTypes = addDataType(term, dataTypes)
-        dataTypes
+            addDataType(term)
         }
     }
 
-    private List<DataTypeRetrieved> addDataType(OntologyTerm term, List<DataTypeRetrieved> dataTypes, datatype = null) {
-        String dataTypeString = datatype ? datatype.dataTypeDescription :"Clinical data"
-        String dataTypeCode =  datatype ? datatype.dataTypeName : "clinical"
-        List tempDataTypes = dataTypes.collect {it.dataType}
-        if (dataTypeString in tempDataTypes){
+    private void addDataType(OntologyTerm term, datatype = null) {
+        String dataTypeString = datatype ? datatype.dataTypeDescription : "Clinical data"
+        String dataTypeCode = datatype ? datatype.dataTypeName : "clinical"
+        List tempDataTypes = dataTypes.collect { it.dataType }
+        if (dataTypeString in tempDataTypes) {
             int index = tempDataTypes.indexOf(dataTypeString)
             DataTypeRetrieved dataType = dataTypes[index]
             addOntologyTerm(term, dataType)
-        } else{
+        } else {
             DataTypeRetrieved dataType = new DataTypeRetrieved(dataType: dataTypeString, dataTypeCode: dataTypeCode)
             addOntologyTerm(term, dataType)
             dataTypes.add(dataType)
         }
-        dataTypes
     }
 
     private void addOntologyTerm(OntologyTerm term, DataTypeRetrieved dataType) {
-        if(cohortNumberID in dataType.OntologyTermsMap.keySet()) {
+        if (cohortNumberID in dataType.OntologyTermsMap.keySet()) {
             dataType.OntologyTermsMap[cohortNumberID].add(term)
         } else {
             dataType.OntologyTermsMap[cohortNumberID] = [term]
