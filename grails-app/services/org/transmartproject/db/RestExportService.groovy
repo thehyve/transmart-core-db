@@ -27,10 +27,6 @@ class RestExportService {
 
     ConceptsResource conceptsResourceService
 
-    int cohortNumberID
-
-    List<DataTypeRetrieved> dataTypes
-
     List<File> export(arguments) {
         DataExportFetchTask task = dataExportFetchTaskFactory.createTask(arguments)
         task.getTsv()
@@ -47,17 +43,13 @@ class RestExportService {
 
         def jsonSlurper = new JsonSlurper()
         def conceptParameters = params.get('concepts').decodeURL()
-        dataTypes = []
+        List<DataTypeRetrieved> dataTypes = []
         try {
             def conceptArguments = jsonSlurper.parseText(conceptParameters)
-            int cohortNumber = 1
-            conceptArguments.cohorts.each { it ->
-                List conceptKeysList = it.conceptKeys
-                cohortNumberID = cohortNumber
-                conceptKeysList.collect { conceptKey ->
-                    getDataType(conceptKey)
-                }
+            int cohortNumber = 0
+            conceptArguments.cohorts.collect { it ->
                 cohortNumber += 1
+                getDataTypes(it, dataTypes, cohortNumber)
             }
             dataTypes
         } catch (JsonException e) {
@@ -65,7 +57,13 @@ class RestExportService {
         }
     }
 
-    private void getDataType(String conceptKey) {
+    private List<DataTypeRetrieved> getDataTypes(Map conceptKeysList, List dataTypes, int cohortNumber) {
+        conceptKeysList.conceptKeys.collect { conceptKey ->
+            getDataType(conceptKey, dataTypes, cohortNumber)
+        }
+    }
+
+    private void getDataType(String conceptKey, List dataTypes, int cohortNumber) {
         OntologyTerm term = conceptsResourceService.getByKey(conceptKey)
         // Retrieve all descendant terms that have the HIGH_DIMENSIONAL attribute
         def terms = term.getAllDescendants() + term
@@ -84,30 +82,30 @@ class RestExportService {
             )
             def datatypes = highDimensionResourceService.getSubResourcesAssayMultiMap([constraint])
             datatypes.collect({ key, value ->
-                addDataType(term, key)
+                addDataType(term, dataTypes, cohortNumber, key)
             })
         } else {
             // No high dimensional data found for this term, this means it is clinical data
-            addDataType(term)
+            addDataType(term, dataTypes, cohortNumber)
         }
     }
 
-    private void addDataType(OntologyTerm term, datatype = null) {
+    private void addDataType(OntologyTerm term, List dataTypes, int cohortNumber, datatype = null) {
         String dataTypeString = datatype ? datatype.dataTypeDescription : "Clinical data"
         String dataTypeCode = datatype ? datatype.dataTypeName : "clinical"
         List tempDataTypes = dataTypes.collect { it.dataType }
         if (dataTypeString in tempDataTypes) {
             int index = tempDataTypes.indexOf(dataTypeString)
             DataTypeRetrieved dataType = dataTypes[index]
-            addOntologyTerm(term, dataType)
+            addOntologyTerm(term, dataType, cohortNumber)
         } else {
             DataTypeRetrieved dataType = new DataTypeRetrieved(dataType: dataTypeString, dataTypeCode: dataTypeCode)
-            addOntologyTerm(term, dataType)
+            addOntologyTerm(term, dataType, cohortNumber)
             dataTypes.add(dataType)
         }
     }
 
-    private void addOntologyTerm(OntologyTerm term, DataTypeRetrieved dataType) {
+    private void addOntologyTerm(OntologyTerm term, DataTypeRetrieved dataType, int cohortNumberID) {
         if (cohortNumberID in dataType.OntologyTermsMap.keySet()) {
             dataType.OntologyTermsMap[cohortNumberID].add(term)
         } else {
