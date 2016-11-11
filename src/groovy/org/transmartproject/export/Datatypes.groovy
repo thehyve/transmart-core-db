@@ -2,7 +2,7 @@ package org.transmartproject.export
 
 import org.transmartproject.core.ontology.OntologyTerm
 
-class DataTypeRetrieved {
+class Datatypes {
 
     Map<Integer, List<OntologyTerm>> OntologyTermsMap = [:]
 

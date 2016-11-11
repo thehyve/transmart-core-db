@@ -10,7 +10,7 @@ import org.transmartproject.core.exceptions.InvalidArgumentsException
 import org.transmartproject.core.exceptions.NoSuchResourceException
 import org.transmartproject.core.ontology.ConceptsResource
 import org.transmartproject.core.ontology.OntologyTerm
-import org.transmartproject.export.DataTypeRetrieved
+import org.transmartproject.export.Datatypes
 import org.transmartproject.export.Tasks.DataExportFetchTask
 import org.transmartproject.export.Tasks.DataExportFetchTaskFactory
 
@@ -32,7 +32,7 @@ class RestExportService {
         task.getTsv()
     }
 
-    public List<DataTypeRetrieved> retrieveDataTypes(params) {
+    public List<Datatypes> retrieveDataTypes(params) {
         if (!(params.containsKey('concepts'))) {
             throw new NoSuchResourceException("No parameter named concepts was given.")
         }
@@ -43,7 +43,7 @@ class RestExportService {
 
         def jsonSlurper = new JsonSlurper()
         def conceptParameters = params.get('concepts').decodeURL()
-        List<DataTypeRetrieved> dataTypes = []
+        List<Datatypes> dataTypes = []
         try {
             def conceptArguments = jsonSlurper.parseText(conceptParameters)
             int cohortNumber = 0
@@ -57,7 +57,7 @@ class RestExportService {
         }
     }
 
-    private List<DataTypeRetrieved> getDataTypes(Map conceptKeysList, List dataTypes, int cohortNumber) {
+    private List<Datatypes> getDataTypes(Map conceptKeysList, List dataTypes, int cohortNumber) {
         conceptKeysList.conceptKeys.collect { conceptKey ->
             getDataType(conceptKey, dataTypes, cohortNumber)
         }
@@ -96,16 +96,16 @@ class RestExportService {
         List tempDataTypes = dataTypes.collect { it.dataType }
         if (dataTypeString in tempDataTypes) {
             int index = tempDataTypes.indexOf(dataTypeString)
-            DataTypeRetrieved dataType = dataTypes[index]
+            Datatypes dataType = dataTypes[index]
             addOntologyTerm(term, dataType, cohortNumber)
         } else {
-            DataTypeRetrieved dataType = new DataTypeRetrieved(dataType: dataTypeString, dataTypeCode: dataTypeCode)
+            Datatypes dataType = new Datatypes(dataType: dataTypeString, dataTypeCode: dataTypeCode)
             addOntologyTerm(term, dataType, cohortNumber)
             dataTypes.add(dataType)
         }
     }
 
-    private void addOntologyTerm(OntologyTerm term, DataTypeRetrieved dataType, int cohortNumberID) {
+    private void addOntologyTerm(OntologyTerm term, Datatypes dataType, int cohortNumberID) {
         if (cohortNumberID in dataType.OntologyTermsMap.keySet()) {
             dataType.OntologyTermsMap[cohortNumberID].add(term)
         } else {
